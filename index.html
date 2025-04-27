@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Directory Listing</title>
+    <style>
+            body {
+                background-color: rgb(30, 34, 41);
+                color: white
+            }
+            a {
+                color: #999999;
+                font-weight: bold;
+                text-decoration:none;
+            }
+            .fileList {
+                border: 1px solid gray;
+                display: flex;
+                width: fit-content;
+                padding: 10px;
+            }
+            .files{
+                border: 2px solid gray;
+                border-radius: 5px;
+                /* padding: 10px; */
+                list-style-type: none;
+                margin: 5px;
+            }
+            ul{
+                padding:0;
+                display:flex;
+                flex-wrap: wrap;
+            }
+            #contextMenu {
+                position: absolute;
+                display: none;
+                background-color: #fff;
+                border: 1px solid #ccc;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+                z-index: 1000;
+            }
+            #contextMenu a {
+                display: block;
+                padding: 10px;
+                text-decoration: none;
+                color: black;
+            }
+            #contextMenu a:hover {
+                background-color: #ddd;
+            }
+
+            img {
+                width: 50px;
+                height:50px;
+                filter: invert(1);
+            }
+            .icon {
+                flex-direction: column;
+                display: flex;
+                align-items: center;
+                margin: 10px;
+            }
+    </style>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const contextMenu = document.getElementById("contextMenu");
+            let currentItem = null;
+
+            // Function to display the context menu
+            document.addEventListener("contextmenu", function(event) {
+                event.preventDefault();
+                currentItem = event.target.closest(".file");
+                console.log(currentItem);
+
+
+                if (currentItem && currentItem.classList.contains("file")) {
+                    contextMenu.style.display = "block";
+                    contextMenu.style.left = `${event.pageX}px`;
+                    contextMenu.style.top = `${event.pageY}px`;
+                }
+            });
+
+            // Hide the context menu if clicking elsewhere
+            document.addEventListener("click", function() {
+                contextMenu.style.display = "none";
+            });
+
+            // Add the "Download as ZIP" action
+            document.getElementById("downloadZip").addEventListener("click", function() {
+                if (currentItem) {
+                    // Use the item name or path to download the ZIP
+                    const itemName = currentItem.getAttribute('href') + "/";
+                    console.log(itemName);
+                    window.location.href = `/download_zip?file=${encodeURIComponent(itemName)}`;
+                    contextMenu.style.display = "none";
+                }
+            });
+            document.getElementById("downloadFile").addEventListener("click", function() {
+                console.log(currentItem);
+                const link = document.createElement('a');
+                link.href = currentItem.getAttribute('href');
+                link.download = currentItem.id || '';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        });
+
+        // Dynamically load files and make them clickable for the context menu
+        fetch("/file_list")
+            .then(response => response.json())
+            .then(files => {
+                const fileListDiv = document.getElementById("fileList");
+                files.forEach(file => {
+                    const fileElement = document.createElement("div");
+                    fileElement.textContent = file;
+                    fileElement.classList.add("file");
+                    fileListDiv.appendChild(fileElement);
+                });
+            });
+    </script>
+</head>
+<body>
+    <div id="contextMenu">
+        <a href="#" id="downloadZip">Download as ZIP</a>
+        <a href="#" id="downloadFile">Download File</a>
+    </div>
+    <h2>Contents of '{{myfolder}}'</h2>
+        <div class="fileList">
+            <ul>
+                {{file_list}}
+            </ul>
+        </div>
+    <br>
+    <!-- <a href="/download"><button>Download All as ZIP</button></a> -->
+</body>
+</html>
