@@ -25,11 +25,19 @@
                 /* padding: 10px; */
                 list-style-type: none;
                 margin: 5px;
+                width: 6vw;
             }
             ul{
                 padding:0;
                 display:flex;
                 flex-wrap: wrap;
+            }
+            .fileName{
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                width: calc(100% + 15px);
+                text-align: center;
             }
             #contextMenu {
                 position: absolute;
@@ -71,8 +79,6 @@
                 event.preventDefault();
                 currentItem = event.target.closest(".file");
                 console.log(currentItem);
-
-
                 if (currentItem && currentItem.classList.contains("file")) {
                     contextMenu.style.display = "block";
                     contextMenu.style.left = `${event.pageX}px`;
@@ -106,18 +112,18 @@
             });
         });
 
-        // Dynamically load files and make them clickable for the context menu
-        fetch("/file_list")
-            .then(response => response.json())
-            .then(files => {
-                const fileListDiv = document.getElementById("fileList");
-                files.forEach(file => {
-                    const fileElement = document.createElement("div");
-                    fileElement.textContent = file;
-                    fileElement.classList.add("file");
-                    fileListDiv.appendChild(fileElement);
-                });
-            });
+        // // Dynamically load files and make them clickable for the context menu
+        // fetch("/file_list")
+        //     .then(response => response.json())
+        //     .then(files => {
+        //         const fileListDiv = document.getElementById("fileList");
+        //         files.forEach(file => {
+        //             const fileElement = document.createElement("div");
+        //             fileElement.textContent = file;
+        //             fileElement.classList.add("file");
+        //             fileListDiv.appendChild(fileElement);
+        //         });
+        //     });
     </script>
 </head>
 <body>
