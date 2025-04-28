@@ -197,8 +197,8 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(404, "File not found")
         elif self.path == '/':
             return self.serve_directory_list()
-        elif os.path.isdir(self.path.lstrip('/').replace(' ', '%20')):  # Check if path is a directory
-            return self.serve_directory(self.path)  # Serve subdirectory
+        elif os.path.isdir(self.path.lstrip('/').replace('%20', ' ')):  # Check if path is a directory
+            return self.serve_directory(self.path + "/")  # Serve subdirectory
         elif self.path.startswith('/download_zip'):
             query_components = parse_qs(urlparse(self.path).query)
             file_name = query_components.get("file", [None])[0]
@@ -259,7 +259,10 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             self.serve_directory_list(dir_path)
 
     def serve_directory_list(self,dir_path=None):
-
+        try:
+            dir_path = dir_path.replace("%20", " ")
+        except:
+            pass
         if dir_path is None:
             dir_path = os.getcwd()
 
@@ -300,7 +303,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             """
         for name in file_list:
             display_name = os.path.basename(name) + "/" if os.path.isdir(name) else os.path.basename(name)
-            href = f"/{name}"
+            href = f"/{name}/" if os.path.isdir(name) else f"/{name}"
             # icon_href = 
             icon_href = FOLDER_SVG if os.path.isdir(name) else UNKNOWN_SVG
             list_items += f"""

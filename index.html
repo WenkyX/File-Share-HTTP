@@ -80,6 +80,15 @@
                 currentItem = event.target.closest(".file");
                 console.log(currentItem);
                 if (currentItem && currentItem.classList.contains("file")) {
+                    console.log(currentItem.getAttribute('id'));
+                    if (currentItem.getAttribute('id').endsWith('/')) {
+                        document.getElementById("downloadZip").style.display = "block";
+                        document.getElementById("downloadFile").style.display = "none";
+                    } else {
+                        document.getElementById("downloadZip").style.display = "none";
+                        document.getElementById("downloadFile").style.display = "block";
+                    }
+
                     contextMenu.style.display = "block";
                     contextMenu.style.left = `${event.pageX}px`;
                     contextMenu.style.top = `${event.pageY}px`;
