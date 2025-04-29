@@ -7,6 +7,7 @@ import io
 from urllib.parse import parse_qs, urlparse, unquote
 import argparse
 import cgi
+import json
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-port", type=int, help="Port number")
@@ -23,7 +24,8 @@ def get_local_ip():
         s.close()
         return local_ip
     except Exception as e:
-        return f"Error: {e}"
+        print("No local network detected")
+        return "Error"
 
 
 
@@ -219,6 +221,28 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(zip_file.getvalue())
             else:
                 self.send_error(400, "Bad Request: No file specified")
+        elif self.path.startswith('/get-file-size'):
+            query_components = parse_qs(urlparse(self.path).query)
+            folder = query_components.get("path", [None])[0]
+            # print(folder)
+            # print(query_components)
+
+            abspath = os.path.abspath(folder)
+            basename = os.path.basename(os.path.normpath(folder))
+            # print(basename)
+
+            if os.path.isdir(folder):
+                size = self.get_folder_size(folder)
+                response = {'size_bytes': self.format_size(size), 'abspath': abspath, 'basename': basename}
+            elif os.path.isfile(folder):
+                size = self.get_file_size(folder)
+                response = {'size_bytes': self.format_size(size), 'abspath': abspath, 'basename': basename}
+            else:
+                response = {'error': 'Path not found'}
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode())
         else:
             return super().do_GET()
         
@@ -260,6 +284,38 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_response(400)
                 self.end_headers()
                 self.wfile.write(b"Invalid Content-Type.")
+
+    def get_folder_size(self, path):
+        total_size = 0
+        try:
+            for dirpath, dirnames, filenames in os.walk(path):
+                for filename in filenames:
+                    filepath = os.path.join(dirpath, filename)
+                    try:
+                        total_size += os.path.getsize(filepath)
+                    except FileNotFoundError:
+                        # File might disappear between walk and getsize
+                        pass
+        except Exception as e:
+            print(e)
+        return total_size
+    def get_file_size(self, path):
+        total_size = 0
+        try:
+            try:
+                total_size += os.path.getsize(path)
+            except FileNotFoundError:
+                pass
+        except Exception as e:
+            print(e)
+        return total_size
+
+    def format_size(self, bytes):
+        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+            if bytes < 1024:
+                return f"{bytes:.2f} {unit}"
+            bytes /= 1024
+        return f"{bytes:.2f} PB"
 
     def create_zip(self, items):
         zip_buffer = io.BytesIO()
@@ -380,12 +436,21 @@ if __name__ == '__main__':
     with socketserver.TCPServer(("", PORT), CustomHandler) as httpd:
         httpd.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         localIp = get_local_ip()
-        print("Local IP:", localIp)
-        print(f"Serving {DIRECTORY_TO_SERVE} at port {PORT}")
-        print(f"Open http://{localIp}:{PORT} in your browser")
+        if localIp == "Error":
+            print(f"Serving {DIRECTORY_TO_SERVE} at 127.0.0.0 instead with Port {PORT}")
+            print(f"Open http://127.0.0.0:{PORT} in your browser")
+        else:
+            print("Local IP:", localIp)
+            print(f"Serving {DIRECTORY_TO_SERVE} at port {PORT}")
+            print(f"Open http://{localIp}:{PORT} in your browser")
+        # print('testttttttttt')
+        # print(CustomHandler.format_size(CustomHandler.get_folder_size(DIRECTORY_TO_SERVE)))
+        # print('bruh')
+
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
             print("\nShutting down...")
             httpd.shutdown()
             httpd.server_close()
+        

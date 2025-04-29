@@ -9,12 +9,17 @@
                 color: white
             }
             a {
-                color: #999999;
+                color: #acff97;
                 font-weight: bold;
                 text-decoration:none;
             }
+            [id$="/"] {
+            /* Styles for any ID that ends with "X" */
+            color: rgb(172, 172, 172);
+            }
             .fileList {
                 border: 1px solid gray;
+                border-radius: 5px;
                 display: flex;
                 width: fit-content;
                 padding: 10px;
@@ -68,6 +73,107 @@
                 align-items: center;
                 margin: 10px;
             }
+            #properties {
+                display: flex;
+                background-color: rgb(38, 43, 51);
+                border-radius: 5px;
+                border: 2px solid rgb(88, 100, 119);
+                width: fit-content;
+                max-width: 12vw;
+                height: 300px;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                opacity: 0;
+                padding: 20px;
+                flex-direction: column;
+                overflow-wrap: anywhere;
+            }
+            .propertiesHead {
+                padding:0;
+                margin: 0;
+            }
+
+            @keyframes popIn {
+                0% {
+                    transform: translate(-50%, -50%) scale(0);
+                    opacity: 0;
+                }
+                50% {
+                    transform: translate(-50%, -50%) scale(1.1);
+                    opacity: 1;
+                }
+                100% {
+                    transform: translate(-50%, -50%) scale(1);
+                    opacity: 1;
+                }
+            }
+
+            @keyframes popOut {
+                0% {
+                    transform: translate(-50%, -50%) scale(1);
+                    opacity: 1;
+                }
+                100% {
+                    transform: translate(-50%, -40%) scale(1);
+                    opacity: 0;
+                }
+            }
+
+            .pop-in {
+                animation: popIn 0.5s ease-out forwards;
+            }
+            .pop-out {
+                animation: popOut 0.20s ease-in forwards;
+            }
+            .close {
+                cursor: pointer;
+                position:absolute;
+                top: 10px;
+                right: 10px;
+                font-size: xx-large;
+            }
+            #drop-zone {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                top: 0;
+                left: 0;
+                opacity: 0;
+                align-items: center;
+                justify-content: center;
+                display: flex;
+                z-index: 10;
+                flex-direction: column;
+                font-size: x-large;
+                /* border: 2px dashed #ccc; */
+                /* border-radius: 10px; */
+                /* text-align: center; */
+                /* line-height: 2000px; */
+                /* justify-content: center;
+                display: flex; */
+                /* color: #999; */
+                /* font-family: sans-serif; */
+                /* margin: 50px auto; */
+                pointer-events: none;
+            }
+            #drop-zone img{
+                width: 15vw;
+                height: 15vw;
+                /* aspect-ratio: 1; */
+            }
+            #drop-zone.dragover {
+                /* border-color: #333;
+                color: #333; */
+                background-color: #3f3f3f17;
+                opacity: 1 !important;
+                backdrop-filter: blur(5px);
+                /* pointer-events: auto; */
+            }
+            #drop-zone.active {
+                pointer-events: auto;
+            }
+
     </style>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
@@ -104,7 +210,7 @@
             document.getElementById("downloadZip").addEventListener("click", function() {
                 if (currentItem) {
                     // Use the item name or path to download the ZIP
-                    const itemName = currentItem.getAttribute('href') + "/";
+                    const itemName = currentItem.getAttribute('href');
                     console.log(itemName);
                     window.location.href = `/download_zip?file=${encodeURIComponent(itemName)}`;
                     contextMenu.style.display = "none";
@@ -119,11 +225,100 @@
                 link.click();
                 document.body.removeChild(link);
             });
+            const span = document.getElementsByClassName('close')[0];
+            span.onclick = function() {
+                document.getElementById("properties").classList.add('pop-out');
+                document.getElementById("properties").classList.remove('pop-in');
+            }
+            document.getElementById("getSize").addEventListener("click", function() {
+                if (currentItem) {
+                    document.getElementById("properties").classList.add('pop-in');
+                    document.getElementById("properties").classList.remove('pop-out');
+                    document.getElementById("size").textContent = "Size: 0";
+                    console.log(document.getElementById("properties"));
+                    let path = currentItem.getAttribute('href');
+                    if (path[0] == '/'){
+                        path = path.slice(1)
+                    }
+                    console.log(path);
+
+                    (async () => {
+                        let result = await getFileSize(path);
+                        document.getElementById("size").textContent = `Size: ${result.sizeBytes}`
+                        document.getElementById("abspath").textContent = `Path: ${result.absPath}`
+                        document.getElementById("basename").textContent = `Name: ${result.baseName}`
+                        console.log(size);
+                    })();
+                }
+                document.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape') {
+                        document.getElementById("properties").classList.add('pop-out');
+                        document.getElementById("properties").classList.remove('pop-in');
+                    }
+                })
+            });
+
+
+            const dropZone = document.getElementById('drop-zone');
+            const properties = document.getElementById("properties");
+            console.log(dropZone);
+
+            // dropZone.addEventListener('dragenter', (event) => {
+            //     event.preventDefault();
+            //     dropZone.style.pointerEvents = 'auto';
+            // });
+            window.addEventListener("dragenter", function(e) {
+                // dropZone.style.pointerEvents = 'auto';
+                event.preventDefault();
+                dropZone.classList.add('dragover');
+                properties.style.display = 'none'
+            });
+
+            // dropZone.addEventListener('dragover', (event) => {
+            //     event.preventDefault();
+            //     dropZone.classList.add('dragover');
+            //     // dropZone.classList.add('active');
+            //     dropZone.style.pointerEvents = 'auto';
+            // });
+            window.addEventListener("dragover", function(e) {
+                event.preventDefault();
+                dropZone.classList.add('dragover');
+                properties.style.display = 'none'
+            });
+
+            // dropZone.addEventListener('dragleave', () => {
+            //     dropZone.classList.remove('dragover');
+            //     dropZone.style.pointerEvents = 'none';
+            // });
+            window.addEventListener("dragleave", function(e) {
+                event.preventDefault();
+                dropZone.classList.remove('dragover');
+                properties.style.display = 'block';
+                properties.classList.remove('pop-out');
+            });
+
+            window.addEventListener('drop', (event) => {
+                event.preventDefault();
+                dropZone.classList.remove('dragover');
+                properties.style.display = 'block';
+                properties.classList.remove('pop-out');
+                const files = event.dataTransfer.files;
+                console.log('Dropped files:', files);                // Handle the dropped files here
+                // Example: log the names
+                for (let file of files) {
+                    console.log(file.name);
+                    uploadFile(file)
+                }
+            });
+            // window.addEventListener("drop", function(e) {
+            //     dropZone.style.pointerEvents = 'none';
+            // });
+
         });
 
-        function uploadFile() {
+        function uploadFile(file) {
             const input = document.getElementById('fileInput');
-            const file = input.files[0];
+            // const file = input.files[0];
 
             const formData = new FormData();
             formData.append('file', file);
@@ -149,13 +344,47 @@
         //             fileListDiv.appendChild(fileElement);
         //         });
         //     });
+
+        function getFileSize(path) {
+            console.log(path);
+            return fetch(`/get-file-size?path=${encodeURIComponent(path)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.size_bytes !== undefined) {
+                        return {
+                            sizeBytes: data.size_bytes,
+                            absPath: data.abspath,
+                            baseName: data.basename,
+                        };
+                    } else {
+                        console.error("Invalid response:", data)
+                    }
+                });
+            }
+
+
     </script>
 </head>
 <body>
     <div id="contextMenu">
         <a href="#" id="downloadZip">Download as ZIP</a>
         <a href="#" id="downloadFile">Download File</a>
+        <a href="#" id="getSize">Properties</a>
     </div>
+    <div id="properties">
+        <span class="close">&times;</span>
+        <h2 class="propertiesHead">Properties</h2>
+        <br>
+        <p id="basename">Name: </p>
+        <p id="size">Size: </p>
+        <p id="abspath">Path: </p>
+    </div>
+    <div id="drop-zone">
+        <img src="./upload-svgrepo-com.svg" alt="" style="pointer-events: none;">
+        Upload file to current directory
+    </div>
+    <!-- <img src="./upload-svgrepo-com.svg" alt=""> -->
+    
     <h2>Contents of '{{myfolder}}'</h2>
         <div class="fileList">
             <ul>
