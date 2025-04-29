@@ -2,178 +2,269 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Directory Listing</title>
     <style>
-            body {
-                background-color: rgb(30, 34, 41);
-                color: white
-            }
-            a {
-                color: #acff97;
-                font-weight: bold;
-                text-decoration:none;
-            }
-            [id$="/"] {
-            /* Styles for any ID that ends with "X" */
-            color: rgb(172, 172, 172);
-            }
-            .fileList {
-                border: 1px solid gray;
-                border-radius: 5px;
-                display: flex;
-                width: fit-content;
-                padding: 10px;
-            }
-            .files{
-                border: 2px solid gray;
-                border-radius: 5px;
-                /* padding: 10px; */
-                list-style-type: none;
-                margin: 5px;
-                width: 6vw;
-            }
-            ul{
-                padding:0;
-                display:flex;
-                flex-wrap: wrap;
-            }
-            .fileName{
-                overflow: hidden;
-                white-space: nowrap;
-                text-overflow: ellipsis;
-                width: calc(100% + 15px);
-                text-align: center;
-            }
-            #contextMenu {
-                position: absolute;
-                display: none;
-                background-color: #fff;
-                border: 1px solid #ccc;
-                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-                z-index: 1000;
-            }
-            #contextMenu a {
-                display: block;
-                padding: 10px;
-                text-decoration: none;
-                color: black;
-            }
-            #contextMenu a:hover {
-                background-color: #ddd;
-            }
+        body {
+            background-color: rgb(30, 34, 41);
+            color: white;
+            margin-bottom: 130px;
+            overflow-x: hidden;
+        }
+        a {
+            color: #acff97;
+            font-weight: bold;
+            text-decoration:none;
+        }
+        [id$="/"] {
+        /* Styles for any ID that ends with "X" */
+        color: rgb(172, 172, 172);
+        }
+        .fileList {
+            border: 1px solid gray;
+            border-radius: 5px;
+            width: 100%;
+            padding: 10px;
+            display: block;
+        }
+        .fileList ul {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0px;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            justify-content: start;
+        }
+        .fileList ul li {
+            box-sizing: border-box;
+        }
+        .files{
+            border: 2px solid gray;
+            border-radius: 5px;
+            /* padding: 10px; */
+            list-style-type: none;
+            margin: 5px;
+            /* width: 100%; */
+        }
+        .fileName{
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            width: calc(100% + 15px);
+            text-align: center;
+        }
+        #contextMenu {
+            position: absolute;
+            display: none;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+        #contextMenu a {
+            display: block;
+            padding: 10px;
+            text-decoration: none;
+            color: black;
+        }
+        #contextMenu a:hover {
+            background-color: #ddd;
+        }
 
-            img {
-                width: 50px;
-                height:50px;
-                filter: invert(1);
-            }
-            .icon {
-                flex-direction: column;
-                display: flex;
-                align-items: center;
-                margin: 10px;
-            }
-            #properties {
-                display: flex;
-                background-color: rgb(38, 43, 51);
-                border-radius: 5px;
-                border: 2px solid rgb(88, 100, 119);
-                width: fit-content;
-                max-width: 12vw;
-                height: 300px;
-                position: absolute;
-                top: 50%;
-                left: 50%;
+        img {
+            width: 50px;
+            height:50px;
+            filter: invert(1);
+        }
+        .icon {
+            flex-direction: column;
+            display: flex;
+            align-items: center;
+            margin: 10px;
+        }
+        #properties {
+            display: flex;
+            background-color: rgb(38, 43, 51);
+            border-radius: 5px;
+            border: 2px solid rgb(88, 100, 119);
+            /* width: fit-content; */
+            max-width: 80%;
+            width: calc(500px - 10vw);
+            height: 300px;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            opacity: 0;
+            padding: 20px;
+            flex-direction: column;
+            overflow-wrap: anywhere;
+            z-index: 5;
+        }
+        .propertiesHead {
+            padding:0;
+            margin: 0;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
                 opacity: 0;
-                padding: 20px;
-                flex-direction: column;
-                overflow-wrap: anywhere;
             }
-            .propertiesHead {
-                padding:0;
-                margin: 0;
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 1;
             }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
 
-            @keyframes popIn {
-                0% {
-                    transform: translate(-50%, -50%) scale(0);
-                    opacity: 0;
-                }
-                50% {
-                    transform: translate(-50%, -50%) scale(1.1);
-                    opacity: 1;
-                }
-                100% {
-                    transform: translate(-50%, -50%) scale(1);
-                    opacity: 1;
-                }
+        @keyframes popOut {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
             }
+            100% {
+                transform: translate(-50%, -40%) scale(1);
+                opacity: 0;
+            }
+        }
 
-            @keyframes popOut {
-                0% {
-                    transform: translate(-50%, -50%) scale(1);
-                    opacity: 1;
-                }
-                100% {
-                    transform: translate(-50%, -40%) scale(1);
-                    opacity: 0;
-                }
-            }
+        .pop-in {
+            animation: popIn 0.5s ease-out forwards;
+        }
+        .pop-out {
+            animation: popOut 0.20s ease-in forwards;
+        }
+        .close {
+            cursor: pointer;
+            position:absolute;
+            top: 10px;
+            right: 10px;
+            font-size: xx-large;
+        }
+        #drop-zone {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            align-items: center;
+            justify-content: center;
+            display: flex;
+            z-index: 10;
+            flex-direction: column;
+            font-size: x-large;
+            /* border: 2px dashed #ccc; */
+            /* border-radius: 10px; */
+            /* text-align: center; */
+            /* line-height: 2000px; */
+            /* justify-content: center;
+            display: flex; */
+            /* color: #999; */
+            /* font-family: sans-serif; */
+            /* margin: 50px auto; */
+            pointer-events: none;
+        }
+        #drop-zone img{
+            width: 15vw;
+            height: 15vw;
+            /* aspect-ratio: 1; */
+        }
+        #drop-zone.dragover {
+            /* border-color: #333;
+            color: #333; */
+            background-color: #3f3f3f17;
+            opacity: 1 !important;
+            backdrop-filter: blur(5px);
+            /* pointer-events: auto; */
+        }
+        #drop-zone.active {
+            pointer-events: auto;
+        }
+        .botnavbar {
+            position: fixed;
+            width: 100%;
+            height: 120px;
+            border-radius: 20px;
+            background-color: rgb(50, 57, 68);
+            bottom: 0;
+            left: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            margin: 0;
+        }
+        .upload {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        #fileInput {
+            display: none;
+        }
+        .uploadlabel {
+            margin: 10px auto; 
+            padding: 0px 25px;
+            border: 1px solid #acff97;
+            border-radius: 9px;
+            background-color: #2e3440;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
 
-            .pop-in {
-                animation: popIn 0.5s ease-out forwards;
-            }
-            .pop-out {
-                animation: popOut 0.20s ease-in forwards;
-            }
-            .close {
-                cursor: pointer;
-                position:absolute;
-                top: 10px;
-                right: 10px;
-                font-size: xx-large;
-            }
-            #drop-zone {
-                position: absolute;
+        }
+        .uploadlabel:hover {
+            border-color: #88c0d0;
+            background-color: #3b4252;
+        }
+        .uploadlabel:focus {
+            outline: none;
+            border-color: #81a1c1;
+            box-shadow: 0 0 5px #81a1c1;
+        }
+        .uploadbutton {
+            margin-top: 0;
+            margin-bottom: 20px;
+            border: none;
+            border-radius: 9px;
+            font-size: large;
+            padding: 3px 20px;
+            background-color: #8abdf7;
+            font-weight: bold;
+        }
+        .uploadbutton:hover {
+            background-color: #709bcc;
+        }
+        #uploadfilename {
+            position: absolute;
+            bottom: 125px;
+        }
+        /* * {
+            display:none;
+        } */
+
+        @media (max-width: 768px) {
+            .fileList ul {
                 width: 100%;
-                height: 100%;
-                top: 0;
-                left: 0;
-                opacity: 0;
-                align-items: center;
-                justify-content: center;
-                display: flex;
-                z-index: 10;
-                flex-direction: column;
-                font-size: x-large;
-                /* border: 2px dashed #ccc; */
-                /* border-radius: 10px; */
-                /* text-align: center; */
-                /* line-height: 2000px; */
-                /* justify-content: center;
-                display: flex; */
-                /* color: #999; */
-                /* font-family: sans-serif; */
-                /* margin: 50px auto; */
-                pointer-events: none;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+                gap: 0px;
+                list-style: none;
+                padding: 0;
+                margin: 0;
+                justify-content: start;
             }
-            #drop-zone img{
-                width: 15vw;
-                height: 15vw;
-                /* aspect-ratio: 1; */
-            }
-            #drop-zone.dragover {
-                /* border-color: #333;
-                color: #333; */
-                background-color: #3f3f3f17;
-                opacity: 1 !important;
-                backdrop-filter: blur(5px);
-                /* pointer-events: auto; */
-            }
-            #drop-zone.active {
-                pointer-events: auto;
-            }
-
+            /* #properties {
+                max-width: 60vw;
+            } */
+        }
     </style>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
@@ -314,22 +405,60 @@
             //     dropZone.style.pointerEvents = 'none';
             // });
 
+            const fileInput = document.getElementById('fileInput');
+            const fileNameSpan = document.getElementById('uploadfilename');
+
+            // Add an event listener to update the label when a file is chosen
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length > 0) {
+                    fileNameSpan.textContent = fileInput.files[0].name; // Display the file name
+                } else {
+                    fileNameSpan.textContent = "Choose a file"; // Reset if no file is chosen
+                }
+            });
+
         });
 
         function uploadFile(file) {
             const input = document.getElementById('fileInput');
-            // const file = input.files[0];
+            if (!file) {
+                file = input.files[0];
+            }
+            console.log(file);
 
             const formData = new FormData();
             formData.append('file', file);
 
-            fetch('/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.text())
-            .then(result => console.log(result))
-            .catch(error => console.error(error));
+            const xhr = new XMLHttpRequest();
+
+            xhr.open('POST', '/upload', true);
+
+            xhr.upload.addEventListener('progress', (event) => {
+                if (event.lengthComputable) {
+                    const percentComplete = Math.round((event.loaded / event.total) * 100);
+                    console.log(`Upload Progress: ${percentComplete}%`);
+                    document.getElementById('uploadfilename').textContent = `Uploading: ${percentComplete}%`;
+                }
+            });
+
+            xhr.addEventListener('load', () => {
+                if (xhr.status === 200) {
+                    console.log('Upload complete:', xhr.responseText);
+                    document.getElementById('uploadfilename').textContent = 'Upload complete!';
+                    location.reload(); // Optionally refresh the page
+                } else {
+                    console.error('Upload failed:', xhr.statusText);
+                    document.getElementById('uploadfilename').textContent = 'Upload failed!';
+                }
+            });
+
+            xhr.addEventListener('error', () => {
+                console.error('An error occurred during the upload.');
+                document.getElementById('uploadfilename').textContent = 'Upload error!';
+            });
+
+            // Send the form data
+            xhr.send(formData);
         }
 
         // // Dynamically load files and make them clickable for the context menu
@@ -380,7 +509,7 @@
         <p id="abspath">Path: </p>
     </div>
     <div id="drop-zone">
-        <img src="./upload-svgrepo-com.svg" alt="" style="pointer-events: none;">
+        <img src="/upload.svg" alt="" style="pointer-events: none;">
         Upload file to current directory
     </div>
     <!-- <img src="./upload-svgrepo-com.svg" alt=""> -->
@@ -392,9 +521,16 @@
             </ul>
         </div>
     <br>
-    <!-- FIX style this -->
-    <input type="file" id="fileInput">
-    <button onclick="uploadFile()">Upload</button>
+    <div class="botnavbar">
+        <div class="upload">
+            <span id="uploadfilename">Choose a file</span>
+            <input type="file" id="fileInput">
+            <label for="fileInput" class="uploadlabel">
+                <img src="/upload.svg" alt="">
+            </label>
+            <button onclick="uploadFile()" class="uploadbutton">Upload</button>
+        </div>
+    </div>
     <!-- <a href="/download"><button>Download All as ZIP</button></a> -->
 </body>
 </html>

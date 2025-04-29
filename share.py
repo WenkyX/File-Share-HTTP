@@ -184,7 +184,7 @@ curpath = None
 class CustomHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         global curpath
-        if self.path.endswith('/folder.svg') or self.path.endswith('/unknown.svg'):
+        if self.path.endswith('/folder.svg') or self.path.endswith('/unknown.svg') or self.path.endswith('/upload.svg'):
             # Serve the SVG files from the directory where the Python script is located
             file_path = os.path.join(os.path.dirname(__file__), os.path.basename(self.path))
             # print(file_path)
