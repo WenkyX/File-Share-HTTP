@@ -37,149 +37,7 @@ DIRECTORY_TO_SERVE = args.path or "./"
 BASE_DIR = os.path.abspath(DIRECTORY_TO_SERVE)
 os.chdir(DIRECTORY_TO_SERVE)
 HTML_TEMPLATE = os.path.join(os.path.dirname(__file__), "index.html")
-# HTML_TEMPLATE = """
-#     <!DOCTYPE html>
-#     <html>
-#     <head>
-#         <meta charset="UTF-8">
-#         <title>Directory Listing</title>
-#         <style>
-#                 body {
-#                     background-color: rgb(30, 34, 41);
-#                     color: white
-#                 }
-#                 a {
-#                     color: #999999;
-#                     font-weight: bold;
-#                     text-decoration:none;
-#                 }
-#                 .fileList {
-#                     border: 1px solid gray;
-#                     display: flex;
-#                     width: fit-content;
-#                     padding: 10px;
-#                 }
-#                 .files{
-#                     border: 2px solid gray;
-#                     border-radius: 5px;
-#                     /* padding: 10px; */
-#                     list-style-type: none;
-#                     margin: 5px;
-#                 }
-#                 ul{
-#                     padding:0;
-#                     display:flex;
-#                     flex-wrap: wrap;
-#                 }
-#                 #contextMenu {
-#                     position: absolute;
-#                     display: none;
-#                     background-color: #fff;
-#                     border: 1px solid #ccc;
-#                     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-#                     z-index: 1000;
-#                 }
-#                 #contextMenu a {
-#                     display: block;
-#                     padding: 10px;
-#                     text-decoration: none;
-#                     color: black;
-#                 }
-#                 #contextMenu a:hover {
-#                     background-color: #ddd;
-#                 }
 
-#                 img {
-#                     width: 50px;
-#                     height:50px;
-#                     filter: invert(1);
-#                 }
-#                 .icon {
-#                     flex-direction: column;
-#                     display: flex;
-#                     align-items: center;
-#                     margin: 10px;
-#                 }
-#         </style>
-#         <script>
-#             document.addEventListener("DOMContentLoaded", function() {
-#                 const contextMenu = document.getElementById("contextMenu");
-#                 let currentItem = null;
-
-#                 // Function to display the context menu
-#                 document.addEventListener("contextmenu", function(event) {
-#                     event.preventDefault();
-#                     currentItem = event.target.closest(".file");
-#                     console.log(currentItem);
-
-
-#                     if (currentItem && currentItem.classList.contains("file")) {
-#                         contextMenu.style.display = "block";
-#                         contextMenu.style.left = `${event.pageX}px`;
-#                         contextMenu.style.top = `${event.pageY}px`;
-#                     }
-#                 });
-
-#                 // Hide the context menu if clicking elsewhere
-#                 document.addEventListener("click", function() {
-#                     contextMenu.style.display = "none";
-#                 });
-
-#                 // Add the "Download as ZIP" action
-#                 document.getElementById("downloadZip").addEventListener("click", function() {
-#                     if (currentItem) {
-#                         // Use the item name or path to download the ZIP
-#                         const itemName = currentItem.getAttribute('href') + "/";
-#                         console.log(itemName);
-#                         window.location.href = `/download_zip?file=${encodeURIComponent(itemName)}`;
-#                         contextMenu.style.display = "none";
-#                     }
-#                 });
-#                 document.getElementById("downloadFile").addEventListener("click", function() {
-#                     console.log(currentItem);
-#                     const link = document.createElement('a');
-#                     link.href = currentItem.getAttribute('href');
-#                     link.download = currentItem.id || '';
-#                     document.body.appendChild(link);
-#                     link.click();
-#                     document.body.removeChild(link);
-#                 });
-#             });
-
-#             // Dynamically load files and make them clickable for the context menu
-#             fetch("/file_list")
-#                 .then(response => response.json())
-#                 .then(files => {
-#                     const fileListDiv = document.getElementById("fileList");
-#                     files.forEach(file => {
-#                         const fileElement = document.createElement("div");
-#                         fileElement.textContent = file;
-#                         fileElement.classList.add("file");
-#                         fileListDiv.appendChild(fileElement);
-#                     });
-#                 });
-#         </script>
-#     </head>
-#     <body>
-#         <div id="contextMenu">
-#             <a href="#" id="downloadZip">Download as ZIP</a>
-#             <a href="#" id="downloadFile">Download File</a>
-#         </div>
-#         <h2>Contents of '{{myfolder}}'</h2>
-#             <div class="fileList">
-#                 <ul>
-#                     {{file_list}}
-#                 </ul>
-#             </div>
-#         <br>
-#         <!-- <a href="/download"><button>Download All as ZIP</button></a> -->
-#     </body>
-#     </html>
-# """
-
-# FOLDER_SVG = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBTdmcgVmVjdG9yIEljb25zIDogaHR0cDovL3d3dy5vbmxpbmV3ZWJmb250cy5jb20vaWNvbiAtLT4KPCFET0NUWVBFIHN2ZyBQVUJMSUMgIi0vL1czQy8vRFREIFNWRyAxLjEvL0VOIiAiaHR0cDovL3d3dy53My5vcmcvR3JhcGhpY3MvU1ZHLzEuMS9EVEQvc3ZnMTEuZHRkIj4KPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IiB2aWV3Qm94PSIwIDAgMjU2IDI1NiIgZW5hYmxlLWJhY2tncm91bmQ9Im5ldyAwIDAgMjU2IDI1NiIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+CjxtZXRhZGF0YT4gU3ZnIFZlY3RvciBJY29ucyA6IGh0dHA6Ly93d3cub25saW5ld2ViZm9udHMuY29tL2ljb24gPC9tZXRhZGF0YT4KPGc+PGc+PGc+PHBhdGggc3Ryb2tlLXdpZHRoPSIyIiBmaWxsLW9wYWNpdHk9IjAiIHN0cm9rZT0iIzAwMDAwMCIgIGQ9Ik0yMC4zLDM4Yy0yLjYsMS4zLTQuNSwyLjgtNi4yLDQuOWMtNC41LDUuNy00LjIsMC4yLTQuMSw4OC40bDAuMiw3OS4xbDEuOCwzYzEuMiwxLjgsMywzLjYsNC44LDQuOGwzLDEuOGg5Mi4xaDkyLjFsMy42LTEuOGM0LjQtMi4yLDkuOS03LjYsMTEuNy0xMS42YzAuNy0xLjcsNy4xLTI0LjUsMTQuMS01MC45YzExLjYtNDMuNCwxMi44LTQ4LjEsMTIuNS01MS40Yy0wLjQtNC43LTIuOC04LjUtNi43LTExYy0yLjgtMS44LTMuMy0xLjgtMTAuNy0ybC03LjctMC4ybC0wLjQtNC43Yy0wLjUtNy0yLjMtMTEuMS02LjctMTUuNmMtMi42LTIuNi00LjgtNC4xLTcuMy01LjFsLTMuNi0xLjVsLTY2LjEtMC4ybC02Ni4xLTAuMmwtMC4yLTcuNGMtMC4yLTYuMi0wLjQtNy44LTEuNi05LjljLTIuMS00LjEtNC43LTYuNy04LjctOC43bC0zLjctMS44SDQwLjJIMjQuMUwyMC4zLDM4eiBNNTcuMSw0NC42YzEuNiwwLjgsMy4zLDIuMyw0LjIsMy44YzEuNiwyLjQsMS42LDIuNywxLjgsMTNsMC4yLDEwLjVoNjkuM2M2OS4yLDAsNjkuMywwLDcyLDEuM2MzLDEuNSw2LjEsNC42LDcuMyw3LjZjMC41LDEuMiwwLjgsMy44LDAuOCw2djMuOWgtNzcuNWMtNDkuNSwwLTc4LjUsMC4yLTgwLjYsMC42Yy0xLjgsMC40LTQuNywxLjMtNi41LDIuMWMtNCwxLjgtOS44LDcuNC0xMS42LDExLjNjLTAuNywxLjUtNS4zLDE3LjktMTAuMiwzNi4ybC05LDMzLjRsLTAuMi02MC4xYy0wLjEtNDIuMSwwLTYwLjksMC41LTYyLjVjMC44LTIuOCwzLjktNi40LDYuNC03LjRjMS4zLTAuNiw1LjYtMC44LDE2LTAuOEM1My40LDQzLjQsNTQuNiw0My40LDU3LjEsNDQuNnogTTIzNC45LDk5LjRjMi4xLDEsMy45LDMuOSwzLjksNi4yYzAsMS45LTI1LjQsOTYuMi0yNi40LDk4LjNjLTEuNCwyLjctNSw1LjktOC40LDcuNWwtMy4xLDEuNWgtODkuMmMtNzYuOSwwLTg5LjQtMC4xLTkwLjktMC45Yy0yLjEtMS4xLTMuOS00LjctMy42LTcuMmMwLjUtMy45LDI1LjQtOTUsMjYuNS05Ny4zYzEuNS0zLDYuMS03LDkuMy04LjFjMi4yLTAuNywxNC41LTAuOSw5MS4xLTAuOUMyMjMuOSw5OC41LDIzMy4xLDk4LjYsMjM0LjksOTkuNHoiLz48L2c+PC9nPjwvZz4KPC9zdmc+"
-FOLDER_SVG = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBTdmcgVmVjdG9yIEljb25zIDogaHR0cDovL3d3dy5vbmxpbmV3ZWJmb250cy5jb20vaWNvbiAtLT4KPCFET0NUWVBFIHN2ZyBQVUJMSUMgIi0vL1czQy8vRFREIFNWRyAxLjEvL0VOIiAiaHR0cDovL3d3dy53My5vcmcvR3JhcGhpY3MvU1ZHLzEuMS9EVEQvc3ZnMTEuZHRkIj4KPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IiB2aWV3Qm94PSIwIDAgMjU2IDI1NiIgZW5hYmxlLWJhY2tncm91bmQ9Im5ldyAwIDAgMjU2IDI1NiIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+CjxtZXRhZGF0YT4gU3ZnIFZlY3RvciBJY29ucyA6IGh0dHA6Ly93d3cub25saW5ld2ViZm9udHMuY29tL2ljb24gPC9tZXRhZGF0YT4KPGc+PGc+PGc+PHBhdGggZmlsbD0iIzAwMDAwMCIgZD0iTTIwLjMsMzhjLTIuNiwxLjMtNC41LDIuOC02LjIsNC45Yy00LjUsNS43LTQuMiwwLjItNC4xLDg4LjRsMC4yLDc5LjFsMS44LDNjMS4yLDEuOCwzLDMuNiw0LjgsNC44bDMsMS44aDkyLjFoOTIuMWwzLjYtMS44YzQuNC0yLjIsOS45LTcuNiwxMS43LTExLjZjMC43LTEuNyw3LjEtMjQuNSwxNC4xLTUwLjljMTEuNi00My40LDEyLjgtNDguMSwxMi41LTUxLjRjLTAuNC00LjctMi44LTguNS02LjctMTFjLTIuOC0xLjgtMy4zLTEuOC0xMC43LTJsLTcuNy0wLjJsLTAuNC00LjdjLTAuNS03LTIuMy0xMS4xLTYuNy0xNS42Yy0yLjYtMi42LTQuOC00LjEtNy4zLTUuMWwtMy42LTEuNWwtNjYuMS0wLjJsLTY2LjEtMC4ybC0wLjItNy40Yy0wLjItNi4yLTAuNC03LjgtMS42LTkuOWMtMi4xLTQuMS00LjctNi43LTguNy04LjdsLTMuNy0xLjhINDAuMkgyNC4xTDIwLjMsMzh6IE01Ny4xLDQ0LjZjMS42LDAuOCwzLjMsMi4zLDQuMiwzLjhjMS42LDIuNCwxLjYsMi43LDEuOCwxM2wwLjIsMTAuNWg2OS4zYzY5LjIsMCw2OS4zLDAsNzIsMS4zYzMsMS41LDYuMSw0LjYsNy4zLDcuNmMwLjUsMS4yLDAuOCwzLjgsMC44LDZ2My45aC03Ny41Yy00OS41LDAtNzguNSwwLjItODAuNiwwLjZjLTEuOCwwLjQtNC43LDEuMy02LjUsMi4xYy00LDEuOC05LjgsNy40LTExLjYsMTEuM2MtMC43LDEuNS01LjMsMTcuOS0xMC4yLDM2LjJsLTksMzMuNGwtMC4yLTYwLjFjLTAuMS00Mi4xLDAtNjAuOSwwLjUtNjIuNWMwLjgtMi44LDMuOS02LjQsNi40LTcuNGMxLjMtMC42LDUuNi0wLjgsMTYtMC44QzUzLjQsNDMuNCw1NC42LDQzLjQsNTcuMSw0NC42eiBNMjM0LjksOTkuNGMyLjEsMSwzLjksMy45LDMuOSw2LjJjMCwxLjktMjUuNCw5Ni4yLTI2LjQsOTguM2MtMS40LDIuNy01LDUuOS04LjQsNy41bC0zLjEsMS41aC04OS4yYy03Ni45LDAtODkuNC0wLjEtOTAuOS0wLjljLTIuMS0xLjEtMy45LTQuNy0zLjYtNy4yYzAuNS0zLjksMjUuNC05NSwyNi41LTk3LjNjMS41LTMsNi4xLTcsOS4zLTguMWMyLjItMC43LDE0LjUtMC45LDkxLjEtMC45QzIyMy45LDk4LjUsMjMzLjEsOTguNiwyMzQuOSw5OS40eiIvPjwvZz48L2c+PC9nPgo8L3N2Zz4="
-UNKNOWN_SVG = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/PgoKPCEtLSBVcGxvYWRlZCB0bzogU1ZHIFJlcG8sIHd3dy5zdmdyZXBvLmNvbSwgR2VuZXJhdG9yOiBTVkcgUmVwbyBNaXhlciBUb29scyAtLT4KPHN2ZyB3aWR0aD0iODAwcHgiIGhlaWdodD0iODAwcHgiIHZpZXdCb3g9IjAgMCA0MDAgNDAwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgoKPGRlZnM+Cgo8c3R5bGU+LmNscy0xe2ZpbGw6IzEwMTAxMDt9PC9zdHlsZT4KCjwvZGVmcz4KCjx0aXRsZS8+Cgo8ZyBpZD0ieHh4LXdvcmQiPgoKPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMzI1LDEwNUgyNTBhNSw1LDAsMCwxLTUtNVYyNWE1LDUsMCwxLDEsMTAsMFY5NWg3MGE1LDUsMCwxLDEsMCwxMFoiLz4KCjxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTMyNSwxNTQuODNhNSw1LDAsMCwxLTUtNVYxMDIuMDdMMjQ3LjkzLDMwSDEwMEEyMCwyMCwwLDAsMCw4MCw1MHY5OC4xN2E1LDUsMCwwLDEtMTAsMFY1MGEzMCwzMCwwLDAsMSwzMC0zMEgyNTBhNSw1LDAsMCwxLDMuNTQsMS40Nmw3NSw3NUE1LDUsMCwwLDEsMzMwLDEwMHY0OS44M0E1LDUsMCwwLDEsMzI1LDE1NC44M1oiLz4KCjxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTMwMCwzODBIMTAwYTMwLDMwLDAsMCwxLTMwLTMwVjI3NWE1LDUsMCwwLDEsMTAsMHY3NWEyMCwyMCwwLDAsMCwyMCwyMEgzMDBhMjAsMjAsMCwwLDAsMjAtMjBWMjc1YTUsNSwwLDAsMSwxMCwwdjc1QTMwLDMwLDAsMCwxLDMwMCwzODBaIi8+Cgo8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0yNzUsMjgwSDEyNWE1LDUsMCwwLDEsMC0xMEgyNzVhNSw1LDAsMCwxLDAsMTBaIi8+Cgo8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0yMDAsMzMwSDEyNWE1LDUsMCwwLDEsMC0xMGg3NWE1LDUsMCwwLDEsMCwxMFoiLz4KCjxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTMyNSwyODBINzVhMzAsMzAsMCwwLDEtMzAtMzBWMTczLjE3YTMwLDMwLDAsMCwxLDMwLTMwaC4ybDI1MCwxLjY2YTMwLjA5LDMwLjA5LDAsMCwxLDI5LjgxLDMwVjI1MEEzMCwzMCwwLDAsMSwzMjUsMjgwWk03NSwxNTMuMTdhMjAsMjAsMCwwLDAtMjAsMjBWMjUwYTIwLDIwLDAsMCwwLDIwLDIwSDMyNWEyMCwyMCwwLDAsMCwyMC0yMFYxNzQuODNhMjAuMDYsMjAuMDYsMCwwLDAtMTkuODgtMjBsLTI1MC0xLjY2WiIvPgoKPHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMjAzLjM4LDIyMC42OWgtNy42MnYtNS4yN2E3LjE0LDcuMTQsMCwwLDEsMS4wNy00LjE4LDI1LDI1LDAsMCwxLDQuNzEtNC4zNHE1LjU1LTQuMjYsNS41NS05YTcuNTksNy41OSwwLDAsMC0yLjE3LTUuNyw3Ljc1LDcuNzUsMCwwLDAtNS42NC0yLjExcS04LDAtOS40OSwxMS4xM2wtOC41Mi0xLjUycS43OC04LjMyLDYuMTUtMTMuMDdhMTguNzgsMTguNzgsMCwwLDEsMTIuODctNC43NSwxNy42NywxNy42NywwLDAsMSwxMi4zNCw0LjQzLDE0LjMsMTQuMywwLDAsMSw0Ljg4LDExLDE0LjgyLDE0LjgyLDAsMCwxLTEuMzUsNi4yMywxNC40OCwxNC40OCwwLDAsMS0zLjA3LDQuNTcsOTIsOTIsMCwwLDEtNy4yNyw1LjY4LDUuNTIsNS41MiwwLDAsMC0yLDIuMjFBMTYsMTYsMCwwLDAsMjAzLjM4LDIyMC42OVptMS41Niw1LjU1VjIzNmgtOS4xOHYtOS43N1oiLz4KCjwvZz4KCjwvc3ZnPg=="
 curpath = None
 class CustomHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -396,7 +254,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             <li class="files">
                 <a class="file" href=".." id="..">
                     <div class=icon>
-                        <img src="{FOLDER_SVG}">
+                        <img src="folder.svg">
                         <span>..<span>
                     </div>
                 </a>
@@ -406,7 +264,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             display_name = os.path.basename(name) + "/" if os.path.isdir(name) else os.path.basename(name)
             href = f"/{name}/" if os.path.isdir(name) else f"/{name}"
             # icon_href = 
-            icon_href = FOLDER_SVG if os.path.isdir(name) else UNKNOWN_SVG
+            icon_href = "folder.svg" if os.path.isdir(name) else "unknown.svg"
             list_items += f"""
             <li class="files">
                 <a class="file" href="{href}" id="{display_name}">
