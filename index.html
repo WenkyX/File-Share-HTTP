@@ -39,6 +39,8 @@
         }
         .fileList ul li {
             box-sizing: border-box;
+            /* background: linear-gradient(to right, rgb(255, 255, 116) 0%, transparent 0%); */
+            position: relative;
         }
         .files{
             border: 2px solid gray;
@@ -265,6 +267,54 @@
                 max-width: 60vw;
             } */
         }
+
+        .buffering {
+            width: 100%;
+            height: 100%;
+            bottom: 0;
+            /* background-color: white; */
+            /* color: white; */
+            position: absolute;
+            /* position: relative; */
+            backdrop-filter: blur(5px);
+            z-index: 6;
+            justify-content: center;
+            display: none;
+            align-items: center;
+            /* display: none; */
+            pointer-events: none;
+            background: linear-gradient(to right, rgb(255, 255, 116) 0%, transparent 0%);
+        }
+
+        .buffering img {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            display: none;
+        }
+
+        .spinner {
+            width: 30%;
+            padding-top: 30%;
+            /* height: 50%; */
+            /* position: absolute;
+            top: 50%;
+            left: 50%; */
+            /* transform: translate(-50%, -50%); */
+            border: 6px solid rgba(255, 255, 255, 0.3);
+            border-top: 6px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
     </style>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
@@ -297,14 +347,98 @@
                 contextMenu.style.display = "none";
             });
 
+            function resetBufferError(element) {
+                const el = element.previousElementSibling;
+                el.style.background = `linear-gradient(to right, rgb(255, 255, 116) 0%, transparent 0%)`;
+                el.querySelector('.spinner').style.display = 'block';
+                el.getElementsByTagName('img')[0].style.display = 'none';
+                el.style.display = 'none'
+            }
+
+            function setBufferError(element, is404=false) {
+                console.log("setBufferErrorsetBufferError");
+                const el = element.previousElementSibling;
+                el.style.display = 'flex'
+                const match = el.style.background.match(/(\d+%)/);
+                let percent = match ? match[1] : '100%';
+                if (percent == '0%') percent = '100%' 
+                el.style.background = `linear-gradient(to right, red ${percent}, transparent 0%)`;
+                el.querySelector('.spinner').style.display = 'none';
+                el.getElementsByTagName('img')[0].style.display = 'block';
+                setTimeout(() => resetBufferError(element), 3000);
+            }
+
             // Add the "Download as ZIP" action
             document.getElementById("downloadZip").addEventListener("click", function() {
                 if (currentItem) {
                     // Use the item name or path to download the ZIP
                     const itemName = currentItem.getAttribute('href');
-                    console.log(itemName);
-                    window.location.href = `/download_zip?file=${encodeURIComponent(itemName)}`;
+                    const thisCurrentItem = currentItem
+                    // console.log(itemName);
                     contextMenu.style.display = "none";
+
+                    // window.location.href = `/download_zip?file=${encodeURIComponent(itemName)}`;
+                    fetch(`/download_zip?file=${encodeURIComponent(itemName)}`)
+                        .then(res => res.text())
+                        .then(jobId => {
+                            console.log("Job ID:", jobId);
+
+                            // Step 2: Poll for progress
+                            // const interval = setInterval(() => {
+                            let pollDelay = 0
+                            let isPolling = true;
+                            
+                            function progresPoll(){
+                                if (!isPolling) return;
+
+                                console.log("callsssssssssssssssssss");
+                                fetch(`/zip_progress?id=${jobId}`)
+                                    .then(res => {
+                                        const contentType = res.headers.get("Content-Type");
+
+                                        // Step 3: If ZIP is ready, trigger download
+                                        if (contentType === "application/zip") {
+                                            // clearInterval(interval);
+                                            isPolling = false;
+                                            return res.blob().then(blob => {
+                                                const link = document.createElement("a");
+                                                link.href = URL.createObjectURL(blob);
+                                                link.download = `${itemName}.zip`;
+                                                link.click();
+                                                document.getElementById("status").innerText = "idle";
+                                                thisCurrentItem.previousElementSibling.style.background = `linear-gradient(to right, rgb(255, 255, 116) 0%, transparent 0%)`
+                                                thisCurrentItem.previousElementSibling.style.display = `none`
+                                            });
+                                        }
+                                        
+                                        // Step 4: Otherwise update progress status
+                                        return res.text().then(progress => {
+                                            document.getElementById("status").innerText = `Progress: ${progress}%`;
+                                            thisCurrentItem.previousElementSibling.style.background = `linear-gradient(to right, rgb(255, 255, 116) ${progress}%, transparent 0%)`
+                                            thisCurrentItem.previousElementSibling.style.display = `flex`
+                                        });
+                                    })
+                                    .catch(err => {
+                                        // clearInterval(interval);
+                                        isPolling = false;
+                                        console.error("Error during progress polling:", err);
+                                        document.getElementById("status").innerText = "Error occurred.";
+                                        setBufferError(thisCurrentItem, true);
+
+                                    });
+                                pollDelay += 20;
+                                if (pollDelay > 1000) pollDelay = 1000;
+                                setTimeout(progresPoll, pollDelay);
+                            // }, 1000);
+                            }
+                            progresPoll();
+                            // }
+                        })
+                        .catch(err => {
+                            console.error("Failed to start ZIP:", err);
+                            document.getElementById("status").innerText = "Failed to start ZIP.";
+                            setBufferError(thisCurrentItem);
+                        });
                 }
             });
             document.getElementById("downloadFile").addEventListener("click", function() {
@@ -521,6 +655,8 @@
             </ul>
         </div>
     <br>
+    <div id="status">Idle</div>
+    <!-- <div class="partial-fill"></div> -->
     <div class="botnavbar">
         <div class="upload">
             <span id="uploadfilename">Choose a file</span>
