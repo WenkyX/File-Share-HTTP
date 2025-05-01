@@ -30,9 +30,9 @@ A simple Python-based HTTP server for sharing files and directories over a netwo
    ```
 2. Run the server:
     ```bash
-    python3 share.py -path [your path] -port [your port]
+    python3 share.py
     ```
-    if arguments are not given will use the current directory the file is at and the port 8700
+    a GUI will pop up prompting you to enter in the path and port you want to use, once configured simply click the "Start server" button,
     
 4. Open your browser on other devices in the same network and navigate to
     `http://192.xxx.xxx.xxx:[PORT]`
