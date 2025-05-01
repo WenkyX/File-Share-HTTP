@@ -1,4 +1,5 @@
 import http.server
+# from http.server import SimpleHTTPRequestHandler
 import socketserver
 import socket
 import os
@@ -8,12 +9,17 @@ from urllib.parse import parse_qs, urlparse, unquote
 import argparse
 import cgi
 import json
+import tkinter as tk
+from tkinter import filedialog
+import threading
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-port", type=int, help="Port number")
 parser.add_argument("-path", type=str, help="Path to directory")
 
 args = parser.parse_args()
+
+#TODO make zip progress job so user know when they download as zip
 
 def get_local_ip():
     try:
@@ -26,20 +32,29 @@ def get_local_ip():
     except Exception as e:
         print("No local network detected")
         return "Error"
-
-
-
 # print(f"Port: {args.port}")
 # print(f"Path: {args.path}")
 
 PORT = args.port or 8700
-DIRECTORY_TO_SERVE = args.path or "./"
+DIRECTORY_TO_SERVE = args.path or "/opt"
 BASE_DIR = os.path.abspath(DIRECTORY_TO_SERVE)
 os.chdir(DIRECTORY_TO_SERVE)
 HTML_TEMPLATE = os.path.join(os.path.dirname(__file__), "index.html")
 
+
+
 curpath = None
 class CustomHandler(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, format, *args):
+        # Send log to a file, a GUI, or suppress it
+
+        message = format % args
+        message1 = ("%s - - [%s] %s" %
+                         (self.address_string(),
+                          self.log_date_time_string(),
+                          message.translate(self._control_char_table)))
+
+        log_output(message1)
     def do_GET(self):
         global curpath
         if self.path.endswith('/folder.svg') or self.path.endswith('/unknown.svg') or self.path.endswith('/upload.svg'):
@@ -57,13 +72,9 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(404, "File not found")
         elif self.path == '/':
             curpath = os.path.join(BASE_DIR, self.path.lstrip('/'))
-            print(curpath)
-            print("1")
             return self.serve_directory_list()
         elif os.path.isdir(self.path.lstrip('/').replace('%20', ' ')):  # Check if path is a directory
             curpath = os.path.join(BASE_DIR, self.path.lstrip('/'))
-            print(curpath)
-            print("2")
             return self.serve_directory(self.path + "/")  # Serve subdirectory
         elif self.path.startswith('/download_zip'):
             query_components = parse_qs(urlparse(self.path).query)
@@ -108,8 +119,6 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         global curpath 
         if self.path == '/upload': 
-            print(curpath)
-            print("3")
 
             # return
             content_type = self.headers['Content-Type']
@@ -290,25 +299,94 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("", PORT), CustomHandler) as httpd:
-        httpd.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        localIp = get_local_ip()
-        if localIp == "Error":
-            print(f"Serving {DIRECTORY_TO_SERVE} at 127.0.0.0 instead with Port {PORT}")
-            print(f"Open http://127.0.0.0:{PORT} in your browser")
-        else:
-            print("Local IP:", localIp)
-            print(f"Serving {DIRECTORY_TO_SERVE} at port {PORT}")
-            print(f"Open http://{localIp}:{PORT} in your browser")
-        # print('testttttttttt')
-        # print(CustomHandler.format_size(CustomHandler.get_folder_size(DIRECTORY_TO_SERVE)))
-        # print('bruh')
-
+    def start_server():
         try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            print("\nShutting down...")
-            httpd.shutdown()
-            httpd.server_close()
-        
+            socketserver.TCPServer.allow_reuse_address = True
+            with socketserver.ThreadingTCPServer(("", PORT), CustomHandler) as httpd:
+                httpd.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                localIp = get_local_ip()
+                if localIp == "Error":
+                    log_output(f"Serving {DIRECTORY_TO_SERVE} at 127.0.0.0 instead with Port {PORT}")
+                    log_output(f"Open http://127.0.0.0:{PORT} in your browser")
+                else:
+                    log_output(f"Local IP: {localIp}")
+                    log_output(f"Serving {DIRECTORY_TO_SERVE} at port {PORT}")
+                    log_output(f"Open http://{localIp}:{PORT} in your browser")
+                    # label.config(text=f"Server started on port {PORT}")
+
+                # print('testttttttttt')
+                # print(CustomHandler.format_size(CustomHandler.get_folder_size(DIRECTORY_TO_SERVE)))
+                # print('bruh')
+
+                try:
+                    httpd.serve_forever()
+                except KeyboardInterrupt:
+                    log_output("\nShutting down...")
+                    httpd.shutdown()
+                    httpd.server_close()
+        except Exception as e:
+            log_output(e)
+    
+    def log_output(message):
+        message = str(message)
+        try: 
+            log_text.insert(tk.END, message + "\n")  # Insert message at the end
+            log_text.yview(tk.END)  # Auto-scroll to the end
+        except Exception:
+            print(message)
+
+    def on_click():
+        global DIRECTORY_TO_SERVE
+        global BASE_DIR
+        global PORT
+        print(DIRECTORY_TO_SERVE)
+        DIRECTORY_TO_SERVE = pathInput.get()
+        BASE_DIR = os.path.abspath(DIRECTORY_TO_SERVE)
+        os.chdir(DIRECTORY_TO_SERVE)
+        print(DIRECTORY_TO_SERVE)
+        try:
+            PORT = int(portInput.get())
+        except Exception as e:
+            return e
+        server_thread = threading.Thread(target=start_server, daemon=True)
+        server_thread.start()
+    
+    def choose_folder():
+        folder = filedialog.askdirectory()
+        if folder:
+            pathInput.delete(0, tk.END)      # Clear current content
+            pathInput.insert(0, folder)  
+
+    root = tk.Tk()
+    root.title("Simple GUI")
+    root.geometry("600x400")
+
+    frame = tk.Frame(root)   # Use a frame to group them horizontally
+    frame.pack(padx=10, pady=10)
+
+    label = tk.Label(frame, text="Choose a path")
+    label.pack(side=tk.LEFT)
+
+    pathInput = tk.Entry(frame)
+    pathInput.insert(tk.END, "./")
+    pathInput.pack(side=tk.LEFT, fill=tk.X, expand=True)
+    # pathInput.place(x = 30, y = 10)
+
+    button = tk.Button(frame, text="Browse...", command=choose_folder)
+    button.pack(side=tk.LEFT, padx=5)
+    # button.place(x = 60, y = 10)
+
+    portInput = tk.Entry(root)
+    portInput.insert(tk.END, "8701")
+    portInput.pack(pady=10)
+
+    button = tk.Button(root, text="Click Me", command=on_click)
+    button.pack(pady=10)
+
+    log_text = tk.Text(root, height=600, width=600, wrap=tk.WORD, state=tk.NORMAL)
+    log_text.pack(padx=10, pady=10)
+
+
+
+
+    root.mainloop()
