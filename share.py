@@ -20,7 +20,6 @@ parser.add_argument("-path", type=str, help="Path to directory")
 
 args = parser.parse_args()
 
-#TODO make zip progress job so user know when they download as zip
 
 zip_progress = {}
 
@@ -49,12 +48,16 @@ HTML_TEMPLATE = os.path.join(os.path.dirname(__file__), "index.html")
 curpath = None
 class CustomHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
-        # Send log to a file, a GUI, or suppress it
+
+        now = time.time()
+        year, month, day, hh, mm, ss, x, y, z = time.localtime(now)
+        s = "%02d:%02d:%02d" % (
+        hh, mm, ss)
 
         message = format % args
-        message1 = ("%s - - [%s] %s" %
+        message1 = ("%s - [%s] %s" %
                          (self.address_string(),
-                          self.log_date_time_string(),
+                          s,
                           message.translate(self._control_char_table)))
 
         log_output(message1)
@@ -83,7 +86,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         elif self.path.startswith('/download_zip'):
             query_components = parse_qs(urlparse(self.path).query)
             file_name = query_components.get("file", [None])[0]
-            print(file_name)
+            # print(file_name)
 
             if file_name:
                 # zip_file = self.create_zip([file_name])
@@ -106,10 +109,10 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             query = parse_qs(urlparse(self.path).query)
             job_id = query.get("id", [None])[0]
             progress = zip_progress.get(job_id)
-            print("=====================================================")
-            print(zip_progress)
-            print(progress)
-            print("=====================================================")
+            # print("=====================================================")
+            # print(zip_progress)
+            # print(progress)
+            # print("=====================================================")
             if progress is None:
                 self.send_error(404)
             elif isinstance(progress, tuple) and progress[0] == "done":
@@ -236,7 +239,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 elif os.path.isdir(item_path):
                     for root, _, files in os.walk(item_path):
                         total_count += len(files)
-                        print(total_count, "total_counttotal_counttotal_counttotal_counttotal_counttotal_counttotal_count")
+                        # print(total_count, "total_counttotal_counttotal_counttotal_counttotal_counttotal_counttotal_count")
                     for root, _, files in os.walk(item_path):
                         for file in files:
                             i += 1
@@ -402,11 +405,9 @@ if __name__ == '__main__':
         global DIRECTORY_TO_SERVE
         global BASE_DIR
         global PORT
-        print(DIRECTORY_TO_SERVE)
         DIRECTORY_TO_SERVE = pathInput.get()
         BASE_DIR = os.path.abspath(DIRECTORY_TO_SERVE)
         os.chdir(DIRECTORY_TO_SERVE)
-        print(DIRECTORY_TO_SERVE)
         try:
             PORT = int(portInput.get())
         except Exception as e:

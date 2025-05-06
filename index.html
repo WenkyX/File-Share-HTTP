@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Directory Listing</title>
     <style>
+        * {
+            -webkit-user-drag: none;
+        }
         body {
             background-color: rgb(30, 34, 41);
             color: white;
@@ -315,6 +318,13 @@
                 transform: rotate(360deg);
             }
         }
+
+        #status {
+            font-size: larger;
+            position: absolute;
+            left: 20px;
+            top: -30px;
+        }
     </style>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
@@ -391,7 +401,6 @@
                             function progresPoll(){
                                 if (!isPolling) return;
 
-                                console.log("callsssssssssssssssssss");
                                 fetch(`/zip_progress?id=${jobId}`)
                                     .then(res => {
                                         const contentType = res.headers.get("Content-Type");
@@ -405,7 +414,7 @@
                                                 link.href = URL.createObjectURL(blob);
                                                 link.download = `${itemName}.zip`;
                                                 link.click();
-                                                document.getElementById("status").innerText = "idle";
+                                                document.getElementById("status").innerText = "Status : idle";
                                                 thisCurrentItem.previousElementSibling.style.background = `linear-gradient(to right, rgb(255, 255, 116) 0%, transparent 0%)`
                                                 thisCurrentItem.previousElementSibling.style.display = `none`
                                             });
@@ -413,7 +422,7 @@
                                         
                                         // Step 4: Otherwise update progress status
                                         return res.text().then(progress => {
-                                            document.getElementById("status").innerText = `Progress: ${progress}%`;
+                                            document.getElementById("status").innerText = `Status : Progress: ${progress}%`;
                                             thisCurrentItem.previousElementSibling.style.background = `linear-gradient(to right, rgb(255, 255, 116) ${progress}%, transparent 0%)`
                                             thisCurrentItem.previousElementSibling.style.display = `flex`
                                         });
@@ -422,12 +431,12 @@
                                         // clearInterval(interval);
                                         isPolling = false;
                                         console.error("Error during progress polling:", err);
-                                        document.getElementById("status").innerText = "Error occurred.";
+                                        document.getElementById("status").innerText = "Status : Error occurred.";
                                         setBufferError(thisCurrentItem, true);
 
                                     });
                                 pollDelay += 20;
-                                if (pollDelay > 1000) pollDelay = 1000;
+                                if (pollDelay > 3000) pollDelay = 3000;
                                 setTimeout(progresPoll, pollDelay);
                             // }, 1000);
                             }
@@ -436,7 +445,7 @@
                         })
                         .catch(err => {
                             console.error("Failed to start ZIP:", err);
-                            document.getElementById("status").innerText = "Failed to start ZIP.";
+                            document.getElementById("status").innerText = "Status : Failed to start ZIP.";
                             setBufferError(thisCurrentItem);
                         });
                 }
@@ -655,9 +664,9 @@
             </ul>
         </div>
     <br>
-    <div id="status">Idle</div>
     <!-- <div class="partial-fill"></div> -->
     <div class="botnavbar">
+        <div id="status">Status : Idle</div>
         <div class="upload">
             <span id="uploadfilename">Choose a file</span>
             <input type="file" id="fileInput">
