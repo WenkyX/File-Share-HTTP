@@ -388,7 +388,7 @@
                     contextMenu.style.display = "none";
 
                     // window.location.href = `/download_zip?file=${encodeURIComponent(itemName)}`;
-                    fetch(`/download_zip?file=${encodeURIComponent(itemName)}`)
+                    fetch(`endpoints/GET/download_zip?file=${encodeURIComponent(itemName)}`)
                         .then(res => res.text())
                         .then(jobId => {
                             console.log("Job ID:", jobId);
@@ -401,7 +401,7 @@
                             function progresPoll(){
                                 if (!isPolling) return;
 
-                                fetch(`/zip_progress?id=${jobId}`)
+                                fetch(`endpoints/GET/zip_progress?id=${jobId}`)
                                     .then(res => {
                                         const contentType = res.headers.get("Content-Type");
 
@@ -574,7 +574,7 @@
 
             const xhr = new XMLHttpRequest();
 
-            xhr.open('POST', '/upload', true);
+            xhr.open('POST', '/endpoints/POST/upload', true);
 
             xhr.upload.addEventListener('progress', (event) => {
                 if (event.lengthComputable) {
@@ -619,7 +619,7 @@
 
         function getFileSize(path) {
             console.log(path);
-            return fetch(`/get-file-size?path=${encodeURIComponent(path)}`)
+            return fetch(`endpoints/GET/get-file-size?path=${encodeURIComponent(path)}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.size_bytes !== undefined) {
@@ -652,7 +652,7 @@
         <p id="abspath">Path: </p>
     </div>
     <div id="drop-zone">
-        <img src="upload.svg" alt="" style="pointer-events: none;">
+        <img src="endpoints/GET/upload.svg" alt="" style="pointer-events: none;">
         Upload file to current directory
     </div>
     <!-- <img src="./upload-svgrepo-com.svg" alt=""> -->
@@ -671,7 +671,7 @@
             <span id="uploadfilename">Choose a file</span>
             <input type="file" id="fileInput">
             <label for="fileInput" class="uploadlabel">
-                <img src="upload.svg" alt="">
+                <img src="endpoints/GET/upload.svg" alt="">
             </label>
             <button onclick="uploadFile()" class="uploadbutton">Upload</button>
         </div>

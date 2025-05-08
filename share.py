@@ -63,7 +63,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         log_output(message1)
     def do_GET(self):
         global curpath
-        if self.path.endswith('/folder.svg') or self.path.endswith('/unknown.svg') or self.path.endswith('/upload.svg') or self.path.endswith('/alert.svg'):
+        if self.path.endswith('endpoints/GET/folder.svg') or self.path.endswith('endpoints/GET/unknown.svg') or self.path.endswith('endpoints/GET/upload.svg') or self.path.endswith('/alert.svg'):
             # Serve the SVG files from the directory where the Python script is located
             file_path = os.path.join(os.path.dirname(__file__), os.path.basename(self.path))
             # print(file_path)
@@ -82,37 +82,29 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         elif os.path.isdir(self.path.lstrip('/').replace('%20', ' ')):  # Check if path is a directory
             curpath = os.path.join(BASE_DIR, self.path.lstrip('/'))
             return self.serve_directory(self.path + "/")  # Serve subdirectory
-        
-        elif self.path.startswith('/download_zip'):
+        elif self.path.startswith('/endpoints/GET/download_zip'):
             query_components = parse_qs(urlparse(self.path).query)
+            if query_components == {}:
+                return
             file_name = query_components.get("file", [None])[0]
             # print(file_name)
 
             if file_name:
-                # zip_file = self.create_zip([file_name])
 
                 job_id = str(uuid.uuid4())
                 zip_progress[job_id] = 0
                 threading.Thread(target=self.create_zip_async, args=(job_id, [file_name])).start()
 
                 self.send_response(200)
-                # self.send_header("Content-Type", "application/zip")
-                # self.send_header("Content-Disposition", f"attachment; filename={file_name}.zip")
-                # self.send_header("Content-Length", str(len(zip_file.getvalue())))
                 self.end_headers()
-                # self.wfile.write(zip_file.getvalue())
                 self.wfile.write(job_id.encode())
             else:
                 self.send_error(400, "Bad Request: No file specified")
 
-        elif self.path.startswith('/zip_progress'):
+        elif self.path.startswith('/endpoints/GET/zip_progress'):
             query = parse_qs(urlparse(self.path).query)
             job_id = query.get("id", [None])[0]
             progress = zip_progress.get(job_id)
-            # print("=====================================================")
-            # print(zip_progress)
-            # print(progress)
-            # print("=====================================================")
             if progress is None:
                 self.send_error(404)
             elif isinstance(progress, tuple) and progress[0] == "done":
@@ -126,12 +118,9 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_response(200)
                 self.end_headers()
                 self.wfile.write(str(progress).encode())
-
-        elif self.path.startswith('/get-file-size'):
+        elif self.path.startswith('/endpoints/GET/get-file-size'):
             query_components = parse_qs(urlparse(self.path).query)
             folder = query_components.get("path", [None])[0]
-            # print(folder)
-            # print(query_components)
 
             abspath = os.path.abspath(folder)
             basename = os.path.basename(os.path.normpath(folder))
@@ -155,7 +144,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
     #FIX test and check for bugs 
     def do_POST(self):
         global curpath 
-        if self.path == '/upload': 
+        if self.path == '/endpoints/POST/upload':
 
             # return
             content_type = self.headers['Content-Type']
@@ -321,7 +310,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             <li class="files">
                 <a class="file" href=".." id="..">
                     <div class=icon>
-                        <img src="folder.svg">
+                        <img src="endpoints/GET/folder.svg">
                         <span>..<span>
                     </div>
                 </a>
@@ -331,7 +320,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             display_name = os.path.basename(name) + "/" if os.path.isdir(name) else os.path.basename(name)
             href = f"/{name}/" if os.path.isdir(name) else f"/{name}"
             # icon_href = 
-            icon_href = "folder.svg" if os.path.isdir(name) else "unknown.svg"
+            icon_href = "endpoints/GET/folder.svg" if os.path.isdir(name) else "endpoints/GET/unknown.svg"
             list_items += f"""
             <li class="files">
                 <div class="buffering">
