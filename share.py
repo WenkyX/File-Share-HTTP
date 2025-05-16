@@ -46,6 +46,7 @@ HTML_TEMPLATE = os.path.join(os.path.dirname(__file__), "index.html")
 
 
 curpath = None
+textData = ""
 class CustomHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
 
@@ -138,12 +139,24 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
             self.wfile.write(json.dumps(response).encode())
+        elif self.path== '/endpoints/GET/getText':
+            # parsed = urlparse(self.path)
+            # query = parse_qs(parsed.query)  # access params like query['key'][0]
+            global textData
+
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            response = {'message': 'GET received', 'data': textData}
+            self.wfile.write(json.dumps(response).encode())
+
         else:
             return super().do_GET()
         
     #FIX test and check for bugs 
     def do_POST(self):
         global curpath 
+        global textData
         if self.path == '/endpoints/POST/upload':
 
             # return
@@ -178,6 +191,22 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(b"Invalid Content-Type.")
 
+        if self.path == '/endpoints/POST/updateText':
+            content_length = int(self.headers['Content-Length'])
+            body = self.rfile.read(content_length)
+            data = json.loads(body)
+
+            textData = data['data']
+            print(textData)
+            # process data here
+
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            response = {'status': 'received'}
+            self.wfile.write(json.dumps(response).encode())
+
+        
     def get_folder_size(self, path):
         total_size = 0
         try:
@@ -419,7 +448,7 @@ if __name__ == '__main__':
             pathInput.insert(0, folder)  
 
     root = tk.Tk()
-    root.title("Simple GUI")
+    root.title("File Share HTTP server")
     root.geometry("600x400")
 
     frame = tk.Frame(root)   # Use a frame to group them horizontally
