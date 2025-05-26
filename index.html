@@ -678,6 +678,11 @@
                     const percentComplete = Math.round((event.loaded / event.total) * 100);
                     console.log(`Upload Progress: ${percentComplete}%`);
                     document.getElementById('uploadfilename').textContent = `Uploading: ${percentComplete}%`;
+                    fetch('/endpoints/POST/upload_progress', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({progress: percentComplete})
+                    });
                 }
             });
 

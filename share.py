@@ -10,9 +10,10 @@ import argparse
 import cgi
 import json
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, ttk
 import threading, uuid
 import time
+import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-port", type=int, help="Port number")
@@ -106,6 +107,8 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             query = parse_qs(urlparse(self.path).query)
             job_id = query.get("id", [None])[0]
             progress = zip_progress.get(job_id)
+            client_ip = self.client_address[0]
+            log_output(f"ZIP progress from {client_ip} : {zip_progress}", 2)
             if progress is None:
                 self.send_error(404)
             elif isinstance(progress, tuple) and progress[0] == "done":
@@ -190,8 +193,18 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_response(400)
                 self.end_headers()
                 self.wfile.write(b"Invalid Content-Type.")
+        elif self.path == '/endpoints/POST/upload_progress':
+            content_type = self.headers['Content-Type']
+            if 'application/json' in content_type:
+                content_length = int(self.headers['Content-Length'])
+                body = self.rfile.read(content_length)
+                data = json.loads(body)
+                client_ip = self.client_address[0]
 
-        if self.path == '/endpoints/POST/updateText':
+                log_output(f"Upload progress from {client_ip} : {data['progress']}%", 2)
+                # print(data['progress'])
+
+        elif self.path == '/endpoints/POST/updateText':
             content_length = int(self.headers['Content-Length'])
             body = self.rfile.read(content_length)
             data = json.loads(body)
@@ -381,6 +394,47 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
 server_instance = None
 
 if __name__ == '__main__':
+    def log_output(message, index=None, end=None):
+        message = str(message)
+
+        if end is None:
+            endl = "\n"
+        elif end == '':
+            endl = ''
+        try: 
+            index = int(index) if index else 1
+            log_texts[index].insert(tk.END, message + endl)  # Insert message at the end
+            log_texts[index].yview(tk.END)  # Auto-scroll to the end
+        except Exception as e:
+            print(f"Error logging output: {e}")
+            print(message)
+
+    #idk, this is from gipity
+    class DualLogger:
+        def __init__(self, minimal_logger, original_stderr):
+            self.minimal_logger = minimal_logger
+            self.original_stderr = original_stderr
+
+        def write(self, message):
+            stripped = message.strip()
+            if stripped:
+                minimal_message = self.filter_message(message)
+                if minimal_message:
+                    self.minimal_logger(minimal_message, 1)
+            self.original_stderr.write(message)  # write full original message, including newlines
+
+        def flush(self):
+            self.original_stderr.flush()
+
+        def filter_message(self, msg):
+            # Customize minimal output here, e.g. remove tracebacks
+            if "Traceback" in msg or msg.startswith("  File"):
+                return ""  # suppress detailed traceback lines
+            return msg.strip()
+
+    sys.stderr = DualLogger(log_output, sys.__stderr__)
+
+    log_texts = {}
     def start_server():
         global server_instance
         try:
@@ -411,13 +465,6 @@ if __name__ == '__main__':
             log_output(e)
             return e
     
-    def log_output(message):
-        message = str(message)
-        try: 
-            log_text.insert(tk.END, message + "\n")  # Insert message at the end
-            log_text.yview(tk.END)  # Auto-scroll to the end
-        except Exception:
-            print(message)
 
     def on_click():
         global DIRECTORY_TO_SERVE
@@ -451,7 +498,18 @@ if __name__ == '__main__':
     root.title("File Share HTTP server")
     root.geometry("600x400")
 
-    frame = tk.Frame(root)   # Use a frame to group them horizontally
+    notebook = ttk.Notebook(root)
+    notebook.pack(expand=True, fill='both')
+
+    tab1 = tk.Frame(notebook)
+    tab2 = tk.Frame(notebook)
+
+    notebook.add(tab1, text='Control')
+    notebook.add(tab2, text='Monitoring')
+
+    #=======================================================================================
+    # region Tab 1 content
+    frame = tk.Frame(tab1)   # Use a frame to group them horizontally
     frame.pack(padx=10, pady=10)
 
     label = tk.Label(frame, text="Choose a path")
@@ -466,21 +524,33 @@ if __name__ == '__main__':
     button.pack(side=tk.LEFT, padx=5)
     # button.place(x = 60, y = 10)
 
-    portInput = tk.Entry(root)
+    portInput = tk.Entry(tab1)
     portInput.insert(tk.END, "8701")
     portInput.pack(pady=10)
 
-    button = tk.Button(root, text="Start Server", command=on_click)
+    button = tk.Button(tab1, text="Start Server", command=on_click)
     button.pack(pady=10)
 
-    stopButton = tk.Button(root, text="Stop Server", command=stop_server)
+    stopButton = tk.Button(tab1, text="Stop Server", command=stop_server)
     stopButton.pack(pady=10)
 
     #TODO make a maximum limit
-    log_text = tk.Text(root, height=600, width=600, wrap=tk.WORD, state=tk.NORMAL)
-    log_text.pack(padx=10, pady=10)
+    log_texts[1] = tk.Text(tab1, height=600, width=600, wrap=tk.WORD, state=tk.NORMAL)
+    log_texts[1].pack(padx=10, pady=10)
+    # endregion
 
+    #=======================================================================================
+    # region Tab 2 content
+    tk.Label(tab2, text="This is Tab 2").pack(padx=10, pady=10)
 
-
-
+    log_texts[2] = tk.Text(tab2, height=600, width=600, wrap=tk.WORD, state=tk.NORMAL)
+    log_texts[2].pack(padx=10, pady=10)
+    #endregion
+    
+    
+    
+    
+    
+    
+    
     root.mainloop()
