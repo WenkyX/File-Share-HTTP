@@ -108,7 +108,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             job_id = query.get("id", [None])[0]
             progress = zip_progress.get(job_id)
             client_ip = self.client_address[0]
-            log_output(f"ZIP progress from {client_ip} : {zip_progress}", 2)
+            log_output(f"ZIP progress from {client_ip} : {progress}%", 2)
             if progress is None:
                 self.send_error(404)
             elif isinstance(progress, tuple) and progress[0] == "done":

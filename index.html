@@ -431,7 +431,7 @@
                     contextMenu.style.display = "none";
 
                     // window.location.href = `/download_zip?file=${encodeURIComponent(itemName)}`;
-                    fetch(`endpoints/GET/download_zip?file=${encodeURIComponent(itemName)}`)
+                    fetch(`/endpoints/GET/download_zip?file=${encodeURIComponent(itemName)}`)
                         .then(res => res.text())
                         .then(jobId => {
                             console.log("Job ID:", jobId);
@@ -444,7 +444,7 @@
                             function progresPoll(){
                                 if (!isPolling) return;
 
-                                fetch(`endpoints/GET/zip_progress?id=${jobId}`)
+                                fetch(`/endpoints/GET/zip_progress?id=${jobId}`)
                                     .then(res => {
                                         const contentType = res.headers.get("Content-Type");
 
@@ -721,7 +721,7 @@
 
         function getFileSize(path) {
             console.log(path);
-            return fetch(`endpoints/GET/get-file-size?path=${encodeURIComponent(path)}`)
+            return fetch(`/endpoints/GET/get-file-size?path=${encodeURIComponent(path)}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.size_bytes !== undefined) {
