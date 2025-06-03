@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Login</title>
+    <style>
+        body {
+            justify-content: center;
+            align-items: center;
+            display: flex;
+            background-color: rgb(34, 35, 48);
+            color: white;
+            flex-direction: column;
+            height: 90vh;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        div {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            justify-content: center;
+            align-items: center;
+            box-shadow: none;
+            border: 1px solid rgb(100, 90, 90);
+            padding: 60px;
+            padding-top: 20px;
+            border-radius: 20px;
+            box-shadow: rgb(143, 133, 133) 0px 0px 10px;
+            backdrop-filter: blue(10px);
+        }
+        input {
+            all:unset;
+        }
+        input:-internal-autofill-selected {
+            background-color: transparent !important;
+        }
+        input:-webkit-autofill {
+            background-color: transparent !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+        .field {
+            background-color: transparent;
+            border: 1px solid rgb(119, 113, 113);
+            border-radius: 30px;
+            color: white;
+            width: 15vw;
+            height: 20px;
+            padding: 15px;
+        }
+        .field::placeholder {
+            color: white;
+        }
+
+        .button {
+            background-color: white;
+            border-radius: 30px;
+            width: 15vw;
+            height: 10px;
+            padding: 15px;
+            justify-content: center;
+            align-items: center;
+            display: flex;
+            color: black;
+        }
+
+        #status {
+            padding-top: 10px;
+            color: rgb(245, 89, 89);
+        }
+
+        .login {
+            all:unset;
+            background-color: white;
+            color: black;
+            justify-content: center;
+            align-items: center;
+            display: flex;
+            border-radius: 30px;
+            width: 15vw;
+            height: 20px;
+            padding: 15px;
+            font-weight: bold;
+            font-size: large;
+        }
+    </style>
+    <script>
+        function sendLogin(event){
+            document.getElementById('status').textContent = ''
+            
+            const username = document.getElementById('username').value
+            const password = document.getElementById('password').value
+
+            document.getElementById('password').value = ''
+            document.getElementById('username').value = ''
+
+            fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            })
+            .then(response => response.text().then(text => ({
+            status: response.status,
+            body: text
+            })))
+            .then(({ status, body }) => {
+            if (status === 200) {
+                console.log('Success:', body);
+                location.reload();
+            } else {
+                console.log('Error:', status, body);
+                document.getElementById('status').textContent = body
+
+            }
+            });
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    sendLogin();
+                }
+            });
+        })
+    </script>
+</head>
+<body>
+    <div>
+        <h1>Login</h1>
+        <!-- <label for="username">Username</label> -->
+        <input name="username" id="username" class="field" placeholder="Username"><br>
+
+        <!-- <label for="password">Password</label> -->
+        <input name="password" id="password" type="password" class="field" placeholder="Password"><br>
+
+        <button onclick="sendLogin()" class="login">Login</button>
+        <span id="status"></span>
+        <!-- <input type="submit" value="Login"> -->
+    </div>
+</body>
+</html>

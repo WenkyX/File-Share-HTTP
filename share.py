@@ -14,6 +14,8 @@ from tkinter import filedialog, ttk
 import threading, uuid
 import time
 import sys
+import base64
+from http.cookies import SimpleCookie
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-port", type=int, help="Port number")
@@ -43,8 +45,15 @@ DIRECTORY_TO_SERVE = args.path or "./"
 BASE_DIR = os.path.abspath(DIRECTORY_TO_SERVE)
 os.chdir(DIRECTORY_TO_SERVE)
 HTML_TEMPLATE = os.path.join(os.path.dirname(__file__), "index.html")
+HTML_LOGIN_TEMPLATE = os.path.join(os.path.dirname(__file__), "login.html")
 
 
+USERS = {
+    "admin": "super",
+    "wenky" : "super"
+    }
+SESSIONS = {}
+# AUTH_STRING = b"Basic " + base64.b64encode(USERNAME + b":" + PASSWORD)
 
 curpath = None
 textData = ""
@@ -63,7 +72,35 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                           message.translate(self._control_char_table)))
 
         log_output(message1)
+
+    # def is_authenticated(self):
+    #     header = self.headers.get('Authorization')
+    #     return header and header.encode() == AUTH_STRING
+    
+    def get_session(self):
+        cookie = self.headers.get("Cookie")
+        if not cookie:
+            return None
+        c = SimpleCookie(cookie)
+        sid = c.get("session")
+        if sid and sid.value in SESSIONS:
+            return SESSIONS[sid.value]
+        return None
+
+    def respond(self, code, body):
+        self.send_response(code)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        self.wfile.write(body.encode())
+
     def do_GET(self):
+        session = self.get_session()
+        if not session:
+            with open(HTML_LOGIN_TEMPLATE, "r", encoding="utf-8") as f:
+                html = f.read()
+            self.respond(200, html)
+            return
+        
         global curpath
         if self.path.endswith('endpoints/GET/folder.svg') or self.path.endswith('endpoints/GET/unknown.svg') or self.path.endswith('endpoints/GET/upload.svg') or self.path.endswith('/alert.svg'):
             # Serve the SVG files from the directory where the Python script is located
@@ -154,10 +191,38 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(response).encode())
 
         else:
-            return super().do_GET()
+            self.send_response(404)
         
     #FIX test and check for bugs 
     def do_POST(self):
+        # if not self.is_authenticated():
+        #     self.request_auth()
+        if self.path == "/login":
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length).decode()
+            data = json.loads(body)
+            user = data.get("username", "")
+            pwd = data.get("password", "")
+            if USERS.get(user) == pwd:
+                sid = str(uuid.uuid4())
+                SESSIONS[sid] = user
+                self.send_response(302)
+                self.send_header("Set-Cookie", f"session={sid}; HttpOnly")
+                self.send_header("Location", "/")
+                self.end_headers()  
+                self.wfile.write(b"Login Success")
+            else:
+                self.send_response(401)
+                self.send_header("Content-Type", "text/plain")
+                self.end_headers()
+                self.wfile.write(b"Invalid credentials")
+                return
+
+        session = self.get_session()
+        if not session:
+            self.send_response(401, "Unauthorized")
+            return
+
         global curpath 
         global textData
         if self.path == '/endpoints/POST/upload':
@@ -218,6 +283,10 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             response = {'status': 'received'}
             self.wfile.write(json.dumps(response).encode())
+        
+        else:
+            self.send_response(404)
+            self.end_headers()
 
         
     def get_folder_size(self, path):
