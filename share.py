@@ -16,6 +16,10 @@ import time
 import sys
 import base64
 from http.cookies import SimpleCookie
+import ssl
+
+context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+context.load_cert_chain(certfile='cert/cert.pem', keyfile='cert/key.pem')
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-port", type=int, help="Port number")
@@ -205,6 +209,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             data = json.loads(body)
             user = data.get("username", "")
             pwd = data.get("password", "")
+            client_ip = self.client_address[0]
             if USERS.get(user) == pwd:
                 sid = str(uuid.uuid4())
                 SESSIONS[sid] = user
@@ -213,6 +218,9 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header("Location", "/")
                 self.end_headers()  
                 self.wfile.write(b"Login Success")
+                print(f"{client_ip} Successfully logged in as {user}")
+                log_output(f"{client_ip} Successfully logged in as {user}",index=2, color='green')
+                log_output(f"{client_ip} Successfully logged in as {user}",index=1, color='green')
             else:
                 self.send_response(401)
                 self.send_header("Content-Type", "text/plain")
@@ -520,15 +528,16 @@ if __name__ == '__main__':
             socketserver.TCPServer.allow_reuse_address = True
             server_instance = socketserver.ThreadingTCPServer(("", PORT), CustomHandler)
             server_instance.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            # server_instance.socket = context.wrap_socket(server_instance.socket, server_side=True)
             localIp = get_local_ip()
             if localIp == "Error":
                 log_output(f"No local network detected", color='red')
                 log_output(f"Serving {DIRECTORY_TO_SERVE} at 127.0.0.0 instead with Port {PORT}")
-                log_output(f"Open http://127.0.0.0:{PORT} in your browser", color='green')
+                log_output(f"Open https://127.0.0.0:{PORT} in your browser", color='green')
             else:
                 log_output(f"Local IP: {localIp}")
                 log_output(f"Serving {DIRECTORY_TO_SERVE} at port {PORT}")
-                log_output(f"Open http://{localIp}:{PORT} in your browser", color='green')
+                log_output(f"Open https://{localIp}:{PORT} in your browser", color='green')
                 # label.config(text=f"Server started on port {PORT}")
 
             # print('testttttttttt')
@@ -655,6 +664,10 @@ if __name__ == '__main__':
 
     log_texts[2] = tk.Text(tab2, height=600, width=600, wrap=tk.WORD, state=tk.NORMAL)
     log_texts[2].pack(padx=10, pady=10)
+
+    log_texts[2].tag_config('red', foreground='red')
+    log_texts[2].tag_config('blue', foreground='blue')
+    log_texts[2].tag_config('green', foreground='green')
     #endregion
 
     #=======================================================================================
