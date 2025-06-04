@@ -48,9 +48,11 @@ HTML_TEMPLATE = os.path.join(os.path.dirname(__file__), "index.html")
 HTML_LOGIN_TEMPLATE = os.path.join(os.path.dirname(__file__), "login.html")
 
 
+USERS_DEFAULT = {
+    "admin": "super",
+    }
 USERS = {
     "admin": "super",
-    "wenky" : "super"
     }
 SESSIONS = {}
 # AUTH_STRING = b"Basic " + base64.b64encode(USERNAME + b":" + PASSWORD)
@@ -95,7 +97,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         session = self.get_session()
-        if not session:
+        if not session and is_authenticate.get():
             with open(HTML_LOGIN_TEMPLATE, "r", encoding="utf-8") as f:
                 html = f.read()
             self.respond(200, html)
@@ -219,7 +221,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
         session = self.get_session()
-        if not session:
+        if not session and is_authenticate.get():
             self.send_response(401, "Unauthorized")
             return
 
@@ -463,7 +465,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
 server_instance = None
 
 if __name__ == '__main__':
-    def log_output(message, index=None, end=None):
+    def log_output(message, index=None, end=None, color=None):
         message = str(message)
 
         if end is None:
@@ -472,8 +474,16 @@ if __name__ == '__main__':
             endl = ''
         try: 
             index = int(index) if index else 1
-            log_texts[index].insert(tk.END, message + endl)  # Insert message at the end
-            log_texts[index].yview(tk.END)  # Auto-scroll to the end
+            if color:
+                try:
+                    log_texts[index].insert('end', message + endl, color)
+                    log_texts[index].yview('end')
+                except:
+                    log_texts[index].insert(tk.END, message + endl)  # Insert message at the end
+                    log_texts[index].yview(tk.END)  # Auto-scroll to the end
+            else:
+                log_texts[index].insert(tk.END, message + endl)  # Insert message at the end
+                log_texts[index].yview(tk.END)  # Auto-scroll to the end
         except Exception as e:
             print(f"Error logging output: {e}")
             print(message)
@@ -512,12 +522,13 @@ if __name__ == '__main__':
             server_instance.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             localIp = get_local_ip()
             if localIp == "Error":
+                log_output(f"No local network detected", color='red')
                 log_output(f"Serving {DIRECTORY_TO_SERVE} at 127.0.0.0 instead with Port {PORT}")
-                log_output(f"Open http://127.0.0.0:{PORT} in your browser")
+                log_output(f"Open http://127.0.0.0:{PORT} in your browser", color='green')
             else:
                 log_output(f"Local IP: {localIp}")
                 log_output(f"Serving {DIRECTORY_TO_SERVE} at port {PORT}")
-                log_output(f"Open http://{localIp}:{PORT} in your browser")
+                log_output(f"Open http://{localIp}:{PORT} in your browser", color='green')
                 # label.config(text=f"Server started on port {PORT}")
 
             # print('testttttttttt')
@@ -539,6 +550,8 @@ if __name__ == '__main__':
         global DIRECTORY_TO_SERVE
         global BASE_DIR
         global PORT
+        global USERS
+
         DIRECTORY_TO_SERVE = pathInput.get()
         BASE_DIR = os.path.abspath(DIRECTORY_TO_SERVE)
         os.chdir(DIRECTORY_TO_SERVE)
@@ -548,6 +561,17 @@ if __name__ == '__main__':
             return e
         server_thread = threading.Thread(target=start_server, daemon=True)
         server_thread.start()
+
+        credentials = users_credentials.get("1.0", "end-1c")
+        if is_authenticate.get():
+            try:
+                USERS = json.loads(credentials)
+                log_output(f"Using authentication with {len(USERS)} users", color='blue')
+            except:
+                log_output("Invalid credentials format. Please use JSON format like: {\"username\": \"password\"}", color='red')
+                print("Invalid credentials format. Please use JSON format like: {\"username\": \"password\"}")
+                log_output("defaulting to {\"admin\": \"super\"}")
+                USERS = USERS_DEFAULT
 
     def stop_server():
         global server_instance
@@ -564,6 +588,7 @@ if __name__ == '__main__':
             pathInput.insert(0, folder)  
 
     root = tk.Tk()
+    is_authenticate = tk.BooleanVar(value = True)
     root.title("File Share HTTP server")
     root.geometry("600x400")
 
@@ -572,14 +597,20 @@ if __name__ == '__main__':
 
     tab1 = tk.Frame(notebook)
     tab2 = tk.Frame(notebook)
+    tab3 = tk.Frame(notebook)
 
     notebook.add(tab1, text='Control')
     notebook.add(tab2, text='Monitoring')
+    notebook.add(tab3, text='Credentials')
+
 
     #=======================================================================================
     # region Tab 1 content
     frame = tk.Frame(tab1)   # Use a frame to group them horizontally
     frame.pack(padx=10, pady=10)
+
+    frame2 = tk.Frame(tab1)   # Use a frame to group them horizontally
+    frame2.pack(padx=10, pady=10)
 
     label = tk.Label(frame, text="Choose a path")
     label.pack(side=tk.LEFT)
@@ -593,27 +624,48 @@ if __name__ == '__main__':
     button.pack(side=tk.LEFT, padx=5)
     # button.place(x = 60, y = 10)
 
-    portInput = tk.Entry(tab1)
+    _kinter_labelPort = tk.Label(frame2, text="port")
+    _kinter_labelPort.pack(side=tk.LEFT, padx=5)
+
+    portInput = tk.Entry(frame2)
     portInput.insert(tk.END, "8701")
     portInput.pack(pady=10)
+
+    checkbox = tk.Checkbutton(tab1, text="Use Authentication", variable=is_authenticate)
+    checkbox.pack()
 
     button = tk.Button(tab1, text="Start Server", command=on_click)
     button.pack(pady=10)
 
     stopButton = tk.Button(tab1, text="Stop Server", command=stop_server)
-    stopButton.pack(pady=10)
+    stopButton.pack()
 
     #TODO make a maximum limit
     log_texts[1] = tk.Text(tab1, height=600, width=600, wrap=tk.WORD, state=tk.NORMAL)
     log_texts[1].pack(padx=10, pady=10)
+
+    log_texts[1].tag_config('red', foreground='red')
+    log_texts[1].tag_config('blue', foreground='blue')
+    log_texts[1].tag_config('green', foreground='green')
+    log_texts[1].tag_config('blue_bg', background='blue')
     # endregion
 
     #=======================================================================================
     # region Tab 2 content
-    tk.Label(tab2, text="This is Tab 2").pack(padx=10, pady=10)
 
     log_texts[2] = tk.Text(tab2, height=600, width=600, wrap=tk.WORD, state=tk.NORMAL)
     log_texts[2].pack(padx=10, pady=10)
+    #endregion
+
+    #=======================================================================================
+    # region Tab 3 content
+
+    tk.Label(tab3, text="Enter users credentials in a JSON format, to be used when logging in").pack(padx=10, pady=10)
+
+    users_credentials = tk.Text(tab3, height=600, width=600, wrap=tk.WORD, state=tk.NORMAL)
+    users_credentials.pack(padx=10, pady=10)
+
+    users_credentials.insert(tk.END, json.dumps(USERS_DEFAULT, indent=4))
     #endregion
     
     
