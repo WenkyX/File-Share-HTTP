@@ -18,8 +18,8 @@ import base64
 from http.cookies import SimpleCookie
 import ssl
 
-context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-context.load_cert_chain(certfile='cert/cert.pem', keyfile='cert/key.pem')
+# context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+# context.load_cert_chain(certfile='cert/cert.pem', keyfile='cert/key.pem')
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-port", type=int, help="Port number")
