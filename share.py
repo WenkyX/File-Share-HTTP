@@ -14,9 +14,10 @@ from tkinter import filedialog, ttk
 import threading, uuid
 import time
 import sys
-import base64
+# import base64
 from http.cookies import SimpleCookie
-import ssl
+# import ssl
+import re
 
 # context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 # context.load_cert_chain(certfile='cert/cert.pem', keyfile='cert/key.pem')
@@ -100,6 +101,10 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(body.encode())
 
     def do_GET(self):
+        requested_path = os.path.abspath(self.path[1:] if self.path.startswith('/') else self.path)
+        if not requested_path.startswith(BASE_DIR):
+            self.send_error(403, "Forbidden: Access outside the base directory is not allowed.")
+            return
         session = self.get_session()
         if not session and is_authenticate.get():
             with open(HTML_LOGIN_TEMPLATE, "r", encoding="utf-8") as f:
@@ -132,6 +137,10 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             if query_components == {}:
                 return
             file_name = query_components.get("file", [None])[0]
+
+            if not (os.path.abspath(file_name)).startswith(BASE_DIR):
+                self.send_error(403, "Forbidden: Access outside the base directory is not allowed.")
+                return
             # print(file_name)
 
             if file_name:
@@ -168,8 +177,10 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         elif self.path.startswith('/endpoints/GET/get-file-size'):
             query_components = parse_qs(urlparse(self.path).query)
             folder = query_components.get("path", [None])[0]
-
             abspath = os.path.abspath(folder)
+            if not abspath.startswith(BASE_DIR):
+                self.send_error(403, "Forbidden: Access outside the base directory is not allowed.")
+                return
             basename = os.path.basename(os.path.normpath(folder))
             # print(basename)
 
@@ -199,7 +210,11 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         else:
             self.send_response(404)
         
-    #FIX test and check for bugs 
+    def is_valid_username(self, username):
+        return bool(re.fullmatch(r"[A-Za-z0-9_.-]{3,20}", username))
+
+    def is_valid_password(self, password):
+        return 1 <= len(password) <= 64
     def do_POST(self):
         # if not self.is_authenticated():
         #     self.request_auth()
@@ -209,6 +224,13 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             data = json.loads(body)
             user = data.get("username", "")
             pwd = data.get("password", "")
+
+            if not self.is_valid_username(user) or not self.is_valid_password(pwd):
+                self.send_response(401)
+                self.send_header("Content-Type", "text/plain")
+                self.end_headers()
+                self.wfile.write(b"Invalid input format")
+                return
             client_ip = self.client_address[0]
             if USERS.get(user) == pwd:
                 sid = str(uuid.uuid4())
@@ -250,7 +272,10 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 # 'file' is the field name from the frontend
                 if 'file' in fs:
                     uploaded_file = fs['file']
-                    filename = uploaded_file.filename
+                    # Sanitize filename to prevent directory traversal
+                    filename = os.path.basename(uploaded_file.filename)
+                    # Optionally, remove dangerous characters
+                    filename = filename.replace("..", "").replace("/", "").replace("\\", "")
                     data = uploaded_file.file.read()
 
                     # Save the uploaded file
