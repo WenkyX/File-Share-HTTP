@@ -155,6 +155,19 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 self.send_error(400, "Bad Request: No file specified")
 
+        elif os.path.isfile(self.path.lstrip('/').replace('%20', ' ')):
+            filepath = os.path.join(BASE_DIR, self.path.lstrip('/').replace('%20', ' '))
+            try:
+                with open(filepath, 'rb') as f:
+                    content = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/octet-stream")
+                self.send_header("Content-Length", str(len(content)))
+                self.end_headers()
+                self.wfile.write(content)
+            except Exception as e:
+                self.send_error(500, "Internal server error")
+
         elif self.path.startswith('/endpoints/GET/zip_progress'):
             query = parse_qs(urlparse(self.path).query)
             job_id = query.get("id", [None])[0]
@@ -445,13 +458,6 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             html = HTML_TEMPLATE
 
         list_items = ""
-        # print("==================================================================================================================================")
-        # print(file_list)
-        # print(dir_path)
-        # print(os.getcwd())
-        # print(os.path.isdir((dir_path + file_list[0])))
-        # print(os.path.relpath(os.path.join(dir_path, file_list[0]), os.getcwd()))
-        # print("==================================================================================================================================")
         list_items += f"""
             <li class="files">
                 <a class="file" href=".." id="..">
