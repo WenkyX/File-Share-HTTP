@@ -22,11 +22,6 @@ import re
 # context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 # context.load_cert_chain(certfile='cert/cert.pem', keyfile='cert/key.pem')
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-port", type=int, help="Port number")
-parser.add_argument("-path", type=str, help="Path to directory")
-
-args = parser.parse_args()
 
 
 zip_progress = {}
@@ -45,8 +40,8 @@ def get_local_ip():
 # print(f"Port: {args.port}")
 # print(f"Path: {args.path}")
 
-PORT = args.port or 8700
-DIRECTORY_TO_SERVE = args.path or "./"
+PORT = 8700
+DIRECTORY_TO_SERVE = "./"
 BASE_DIR = os.path.abspath(DIRECTORY_TO_SERVE)
 os.chdir(DIRECTORY_TO_SERVE)
 HTML_TEMPLATE = os.path.join(os.path.dirname(__file__), "index.html")
@@ -66,19 +61,22 @@ curpath = None
 textData = ""
 class CustomHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
+        try:
+            now = time.time()
+            year, month, day, hh, mm, ss, x, y, z = time.localtime(now)
+            s = "%02d:%02d:%02d" % (
+            hh, mm, ss)
 
-        now = time.time()
-        year, month, day, hh, mm, ss, x, y, z = time.localtime(now)
-        s = "%02d:%02d:%02d" % (
-        hh, mm, ss)
+            message = format % args
+            message1 = ("%s - [%s] %s" %
+                            (self.address_string(),
+                            s,
+                            message.translate(self._control_char_table)))
 
-        message = format % args
-        message1 = ("%s - [%s] %s" %
-                         (self.address_string(),
-                          s,
-                          message.translate(self._control_char_table)))
-
-        log_output(message1)
+            log_output(message1)
+        except Exception as e:
+            # print(f"Error logging message: {e}")
+            print(f"Original message: {format % args}")
 
     # def is_authenticated(self):
     #     header = self.headers.get('Authorization')
@@ -525,7 +523,7 @@ if __name__ == '__main__':
                 log_texts[index].yview(tk.END)  # Auto-scroll to the end
         except Exception as e:
             print(f"Error logging output: {e}")
-            print(message)
+            print("Original log:", message)
 
     #idk, this is from gipity
     class DualLogger:
@@ -557,7 +555,9 @@ if __name__ == '__main__':
         global server_instance
         try:
             socketserver.TCPServer.allow_reuse_address = True
+            # print(get_local_ip())
             server_instance = socketserver.ThreadingTCPServer(("", PORT), CustomHandler)
+            print("server_instance")
             server_instance.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             # server_instance.socket = context.wrap_socket(server_instance.socket, server_side=True)
             localIp = get_local_ip()
@@ -627,95 +627,119 @@ if __name__ == '__main__':
             pathInput.delete(0, tk.END)      # Clear current content
             pathInput.insert(0, folder)  
 
-    root = tk.Tk()
-    is_authenticate = tk.BooleanVar(value = True)
-    root.title("File Share HTTP server")
-    root.geometry("600x400")
-
-    notebook = ttk.Notebook(root)
-    notebook.pack(expand=True, fill='both')
-
-    tab1 = tk.Frame(notebook)
-    tab2 = tk.Frame(notebook)
-    tab3 = tk.Frame(notebook)
-
-    notebook.add(tab1, text='Control')
-    notebook.add(tab2, text='Monitoring')
-    notebook.add(tab3, text='Credentials')
 
 
-    #=======================================================================================
-    # region Tab 1 content
-    frame = tk.Frame(tab1)   # Use a frame to group them horizontally
-    frame.pack(padx=10, pady=10)
+    try:
+        root = tk.Tk()
+        is_authenticate = tk.BooleanVar(value = True)
+        root.title("File Share HTTP server")
+        root.geometry("600x400")
 
-    frame2 = tk.Frame(tab1)   # Use a frame to group them horizontally
-    frame2.pack(padx=10, pady=10)
+        notebook = ttk.Notebook(root)
+        notebook.pack(expand=True, fill='both')
 
-    label = tk.Label(frame, text="Choose a path")
-    label.pack(side=tk.LEFT)
+        tab1 = tk.Frame(notebook)
+        tab2 = tk.Frame(notebook)
+        tab3 = tk.Frame(notebook)
 
-    pathInput = tk.Entry(frame)
-    pathInput.insert(tk.END, "../")
-    pathInput.pack(side=tk.LEFT, fill=tk.X, expand=True)
-    # pathInput.place(x = 30, y = 10)
+        notebook.add(tab1, text='Control')
+        notebook.add(tab2, text='Monitoring')
+        notebook.add(tab3, text='Credentials')
 
-    button = tk.Button(frame, text="Browse...", command=choose_folder)
-    button.pack(side=tk.LEFT, padx=5)
-    # button.place(x = 60, y = 10)
 
-    _kinter_labelPort = tk.Label(frame2, text="port")
-    _kinter_labelPort.pack(side=tk.LEFT, padx=5)
+        #=======================================================================================
+        # region Tab 1 content
+        frame = tk.Frame(tab1)   # Use a frame to group them horizontally
+        frame.pack(padx=10, pady=10)
 
-    portInput = tk.Entry(frame2)
-    portInput.insert(tk.END, "8701")
-    portInput.pack(pady=10)
+        frame2 = tk.Frame(tab1)   # Use a frame to group them horizontally
+        frame2.pack(padx=10, pady=10)
 
-    checkbox = tk.Checkbutton(tab1, text="Use Authentication", variable=is_authenticate)
-    checkbox.pack()
+        label = tk.Label(frame, text="Choose a path")
+        label.pack(side=tk.LEFT)
 
-    button = tk.Button(tab1, text="Start Server", command=on_click)
-    button.pack(pady=10)
+        pathInput = tk.Entry(frame)
+        pathInput.insert(tk.END, "../")
+        pathInput.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        # pathInput.place(x = 30, y = 10)
 
-    stopButton = tk.Button(tab1, text="Stop Server", command=stop_server)
-    stopButton.pack()
+        button = tk.Button(frame, text="Browse...", command=choose_folder)
+        button.pack(side=tk.LEFT, padx=5)
+        # button.place(x = 60, y = 10)
 
-    #TODO make a maximum limit
-    log_texts[1] = tk.Text(tab1, height=600, width=600, wrap=tk.WORD, state=tk.NORMAL)
-    log_texts[1].pack(padx=10, pady=10)
+        _kinter_labelPort = tk.Label(frame2, text="port")
+        _kinter_labelPort.pack(side=tk.LEFT, padx=5)
 
-    log_texts[1].tag_config('red', foreground='red')
-    log_texts[1].tag_config('blue', foreground='blue')
-    log_texts[1].tag_config('green', foreground='green')
-    log_texts[1].tag_config('blue_bg', background='blue')
-    # endregion
+        portInput = tk.Entry(frame2)
+        portInput.insert(tk.END, "8701")
+        portInput.pack(pady=10)
 
-    #=======================================================================================
-    # region Tab 2 content
+        checkbox = tk.Checkbutton(tab1, text="Use Authentication", variable=is_authenticate)
+        checkbox.pack()
 
-    log_texts[2] = tk.Text(tab2, height=600, width=600, wrap=tk.WORD, state=tk.NORMAL)
-    log_texts[2].pack(padx=10, pady=10)
+        button = tk.Button(tab1, text="Start Server", command=on_click)
+        button.pack(pady=10)
 
-    log_texts[2].tag_config('red', foreground='red')
-    log_texts[2].tag_config('blue', foreground='blue')
-    log_texts[2].tag_config('green', foreground='green')
-    #endregion
+        stopButton = tk.Button(tab1, text="Stop Server", command=stop_server)
+        stopButton.pack()
 
-    #=======================================================================================
-    # region Tab 3 content
+        #TODO make a maximum limit
+        log_texts[1] = tk.Text(tab1, height=600, width=600, wrap=tk.WORD, state=tk.NORMAL)
+        log_texts[1].pack(padx=10, pady=10)
 
-    tk.Label(tab3, text="Enter users credentials in a JSON format, to be used when logging in").pack(padx=10, pady=10)
+        log_texts[1].tag_config('red', foreground='red')
+        log_texts[1].tag_config('blue', foreground='blue')
+        log_texts[1].tag_config('green', foreground='green')
+        log_texts[1].tag_config('blue_bg', background='blue')
+        # endregion
 
-    users_credentials = tk.Text(tab3, height=600, width=600, wrap=tk.WORD, state=tk.NORMAL)
-    users_credentials.pack(padx=10, pady=10)
+        #=======================================================================================
+        # region Tab 2 content
 
-    users_credentials.insert(tk.END, json.dumps(USERS_DEFAULT, indent=4))
-    #endregion
-    
-    
-    
-    
-    
-    
-    
-    root.mainloop()
+        log_texts[2] = tk.Text(tab2, height=600, width=600, wrap=tk.WORD, state=tk.NORMAL)
+        log_texts[2].pack(padx=10, pady=10)
+
+        log_texts[2].tag_config('red', foreground='red')
+        log_texts[2].tag_config('blue', foreground='blue')
+        log_texts[2].tag_config('green', foreground='green')
+        #endregion
+
+        #=======================================================================================
+        # region Tab 3 content
+
+        tk.Label(tab3, text="Enter users credentials in a JSON format, to be used when logging in").pack(padx=10, pady=10)
+
+        users_credentials = tk.Text(tab3, height=600, width=600, wrap=tk.WORD, state=tk.NORMAL)
+        users_credentials.pack(padx=10, pady=10)
+
+        users_credentials.insert(tk.END, json.dumps(USERS_DEFAULT, indent=4))
+        #endregion
+        
+        
+        
+        
+        
+        
+        
+        root.mainloop()
+
+    except Exception as e:
+        print("Error Trying to use display:", e)
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-port", type=int, help="Port number")
+        parser.add_argument("-path", type=str, help="Path to directory")
+
+        args = parser.parse_args()
+
+        PORT = args.port or 8700
+        DIRECTORY_TO_SERVE = args.path or "./"
+        BASE_DIR = os.path.abspath(DIRECTORY_TO_SERVE)
+        os.chdir(DIRECTORY_TO_SERVE)
+
+        print(f"Port: {PORT}")
+        print(f"Path: {DIRECTORY_TO_SERVE}")
+
+        # server_thread = threading.Thread(target=start_server, daemon=True)
+        # server_thread.start()
+        is_authenticate = type('', (), {'get': lambda self: True})()
+        start_server()
