@@ -522,8 +522,8 @@ if __name__ == '__main__':
                 log_texts[index].insert(tk.END, message + endl)  # Insert message at the end
                 log_texts[index].yview(tk.END)  # Auto-scroll to the end
         except Exception as e:
-            print(f"Error logging output: {e}")
-            print("Original log:", message)
+            # print(f"Error logging output: {e}")
+            print(message)
 
     #idk, this is from gipity
     class DualLogger:
