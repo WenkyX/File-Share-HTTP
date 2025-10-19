@@ -18,6 +18,7 @@ import sys
 from http.cookies import SimpleCookie
 # import ssl
 import re
+import mimetypes
 
 # context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 # context.load_cert_chain(certfile='cert/cert.pem', keyfile='cert/key.pem')
@@ -132,11 +133,28 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             return self.serve_directory(self.path + "/")  # Serve subdirectory
         elif self.path.startswith('/endpoints/GET/download_zip'):
             query_components = parse_qs(urlparse(self.path).query)
+            print(query_components)
+            print(self.path)
             if query_components == {}:
                 return
             file_name = query_components.get("file", [None])[0]
+            
+            # Ensure file_name is prefixed with BASE_DIR when it's a relative path
+            file_name1 = None
+            if file_name:
+                file_name1 = unquote(file_name)
+                # normalize and remove any leading slashes/backslashes
+                file_name1 = os.path.normpath(file_name1.lstrip("/\\"))
+                if not os.path.isabs(file_name1):
+                    file_name1 = os.path.join(BASE_DIR, file_name1)
+                else:
+                    file_name1 = os.path.normpath(file_name1)
+                # update original variable for downstream code
+                file_name = file_name1
+            print(file_name1)
 
             if not (os.path.abspath(file_name)).startswith(BASE_DIR):
+                print(os.path.abspath(file_name), "vs", BASE_DIR)
                 self.send_error(403, "Forbidden: Access outside the base directory is not allowed.")
                 return
             # print(file_name)
@@ -156,14 +174,20 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         elif os.path.isfile(self.path.lstrip('/').replace('%20', ' ')):
             filepath = os.path.join(BASE_DIR, self.path.lstrip('/').replace('%20', ' '))
             try:
+                ctype, _ = mimetypes.guess_type(filepath)
+                if ctype is None:
+                    ctype = "application/octet-stream"
+
                 with open(filepath, 'rb') as f:
                     content = f.read()
+
                 self.send_response(200)
-                self.send_header("Content-Type", "application/octet-stream")
+                self.send_header("Content-Type", ctype)
+                self.send_header("Content-Disposition", "inline")
                 self.send_header("Content-Length", str(len(content)))
                 self.end_headers()
                 self.wfile.write(content)
-            except Exception as e:
+            except Exception:
                 self.send_error(500, "Internal server error")
 
         elif self.path.startswith('/endpoints/GET/zip_progress'):
@@ -470,14 +494,21 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             display_name = os.path.basename(name) + "/" if os.path.isdir(name) else os.path.basename(name)
             href = f"/{name}/" if os.path.isdir(name) else f"/{name}"
             # icon_href = 
-            icon_href = "endpoints/GET/folder.svg" if os.path.isdir(name) else "endpoints/GET/unknown.svg"
+            # icon_href = "endpoints/GET/folder.svg" if os.path.isdir(name) else "endpoints/GET/unknown.svg"
+            if os.path.isdir(name):
+                icon_href = "endpoints/GET/folder.svg"
+            # elif name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp', '.tiff', '.ico', '.heic', '.jfif', '.avif', '.apng', '.raw', '.pbm', '.pgm', '.ppm', '.xbm', '.xpm', '.cur', '.tga', '.dds', '.exr', '.j2k', '.jpf', '.jp2', '.jpx', '.jpm', '.mj2', '.sgi', '.ras', '.cmx')):
+            elif name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp', '.bmp', '.ico', '.avif', '.apng')):
+                icon_href = os.path.basename(name)
+            else:
+                icon_href = "endpoints/GET/unknown.svg"
             list_items += f"""
             <li class="files">
                 <div class="buffering">
                     <div class="spinner"></div>
                     <img src="alert.svg">
                 </div>
-                <a class="file" href="{href}" id="{display_name}">
+                <a class="file" href="{href}" id="{display_name}" {"onclick=\"previewImage(event, this)\"" if icon_href == os.path.basename(name) else ''}>
                     <div class=icon>
                         <img src="{icon_href}">
                         <div class="fileName">

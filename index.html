@@ -18,6 +18,16 @@
             color: #acff97;
             font-weight: bold;
             text-decoration:none;
+            display: flex;
+            height: 100%;
+            width: 100%;
+        }
+
+        a div img {
+            width: 100%;
+            max-height: 100px;
+            object-fit: contain;
+            /* height: 50px; */
         }
         [id$="/"] {
         /* Styles for any ID that ends with "X" */
@@ -34,6 +44,7 @@
             width: 100%;
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            grid-auto-flow: row;
             gap: 0px;
             list-style: none;
             padding: 0;
@@ -41,25 +52,55 @@
             justify-content: start;
         }
         .fileList ul li {
+            display: grid;
+            max-width: 100%;
             box-sizing: border-box;
             /* background: linear-gradient(to right, rgb(255, 255, 116) 0%, transparent 0%); */
             position: relative;
+            min-width: 0;
         }
+        
+        .files,
+        a.file,
+        .icon,
+        .fileName {
+        min-width: 0;
+        max-width: 100%;
+        }
+
         .files{
             border: 2px solid gray;
             border-radius: 5px;
             /* padding: 10px; */
             list-style-type: none;
             margin: 5px;
-            /* width: 100%; */
         }
         .fileName{
+            /* overflow-wrap: break-word; */
+            word-break: break-all; /* optional, for long strings without spaces */
+            white-space: normal;
             overflow: hidden;
-            white-space: nowrap;
+            /* white-space: nowrap; */
             text-overflow: ellipsis;
-            width: calc(100% + 15px);
             text-align: center;
+            flex: 1;
+            position: relative;
+            max-height: 3.5em;
+
+            display: -webkit-box;   
+            -webkit-line-clamp: 3;       /* number of lines */
+            line-clamp: 3;
+            -webkit-box-orient: vertical;
         }
+        /* .fileName::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1em;
+            background: linear-gradient(to top, var(--background-color, black), transparent);
+        } */
         #contextMenu {
             position: absolute;
             display: none;
@@ -78,19 +119,16 @@
             background-color: #ddd;
         }
 
-        img {
-            width: 50px;
-            height:50px;
-            filter: invert(1);
-        }
         .icon {
             flex-direction: column;
             display: flex;
             align-items: center;
-            margin: 10px;
+            width: 100%;
+            flex: 1;
+            /* margin: 10px; */
         }
         #properties {
-            display: flex;
+            display: none;
             background-color: rgb(38, 43, 51);
             border-radius: 5px;
             border: 2px solid rgb(88, 100, 119);
@@ -135,6 +173,7 @@
             100% {
                 transform: translate(-50%, -40%) scale(1);
                 opacity: 0;
+                display: none;
             }
         }
 
@@ -210,6 +249,7 @@
             align-items: center;
             justify-content: center;
             flex-direction: column;
+            width: 100px;
         }
         #fileInput {
             display: none;
@@ -223,7 +263,6 @@
             color: white;
             font-size: 16px;
             cursor: pointer;
-
         }
         .uploadlabel:hover {
             border-color: #88c0d0;
@@ -233,6 +272,12 @@
             outline: none;
             border-color: #81a1c1;
             box-shadow: 0 0 5px #81a1c1;
+        }
+
+        .uploadlabel img {
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
         }
         .uploadbutton {
             margin-top: 0;
@@ -368,8 +413,108 @@
         html {
             padding-top: 20px;
         }
+
+        .modal {
+            position: fixed;
+            z-index: 15;
+            top: 0;
+            left: 0;
+            flex-direction: column;
+            display: none;
+            width: 100%;
+            height: 100%;
+            backdrop-filter: blur(5px) brightness(0.7);
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            
+        }
+        .modal img {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            max-height: 80%;
+            border: #2e3440 ridge 2px;
+            border-radius: 10px;
+        }
+        .modal span.close {
+            position: fixed;
+            top: 20px;
+            right: 40px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 20;
+        }
+        .modal span.close:hover,
+        .modal span.close:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .modal #modalCaption {
+            background-color: rgba(0, 0, 0, 0.301);
+            color: white;
+            font-size: large;
+            border-radius: 5px;
+            padding: 10px;
+            user-select: text;
+        }
+
+        .modal button#download,
+        .modal button#openinnewtab {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: large;
+            border: none;
+            border-radius: 9px;
+            background-color: #8abdf7;
+            font-weight: bold;
+            cursor: pointer;
+        }
     </style>
     <script>
+        function previewImage(e, el) {
+            e.preventDefault();
+            console.log(el.href)
+            const modal = document.getElementById("ImageModal");
+            const captionText = document.getElementById("modalCaption");
+            const modalImg = document.getElementById("img01");
+            modal.style.display = "flex";
+            captionText.innerHTML = el.id;
+            modalImg.src = el.href;
+            console.log(modalImg.getBoundingClientRect().width + 10);
+            console.log(window.innerWidth * 0.9);
+            if (modalImg.getBoundingClientRect().width + 10 >= window.innerWidth * 0.9 || modalImg.getBoundingClientRect().height + 10 >= window.innerHeight * 0.8){
+                document.getElementsByClassName('modal-content')[0].style.border = "5px solid #8abdf7"; //indicate that image is scaled down
+            }else{
+                console.log("asdff");
+                document.getElementsByClassName('modal-content')[0].style.border = "#2e3440 solid 5px"
+            }
+        }
+
+        function closeModal(e) {
+            if (e && e.target.id !== "ImageModal") return;
+            const modal = document.getElementById("ImageModal");
+            modal.style.display = "none";
+        }
+
+        function downloadModal() {
+            const modalImg = document.getElementById("img01");
+            const link = document.createElement('a');
+            link.href = modalImg.src;
+            link.download = modalImg.src.split('/').pop();
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function openInNewTabModal() {
+            const modalImg = document.getElementById("img01");
+            window.open(modalImg.src, '_blank');
+        }
+
         document.addEventListener("DOMContentLoaded", function() {
             const contextMenu = document.getElementById("contextMenu");
             let currentItem = null;
@@ -504,15 +649,18 @@
             });
             const span = document.getElementsByClassName('close')[0];
             span.onclick = function() {
-                document.getElementById("properties").classList.add('pop-out');
-                document.getElementById("properties").classList.remove('pop-in');
+                const properties = document.getElementById("properties");
+                properties.classList.add('pop-out');
+                properties.classList.remove('pop-in');
             }
             document.getElementById("getSize").addEventListener("click", function() {
                 if (currentItem) {
-                    document.getElementById("properties").classList.add('pop-in');
-                    document.getElementById("properties").classList.remove('pop-out');
+                    const properties = document.getElementById("properties");
+                    properties.classList.add('pop-in');
+                    properties.classList.remove('pop-out');
+                    properties.style.display = 'flex';
                     document.getElementById("size").textContent = "Size: 0";
-                    console.log(document.getElementById("properties"));
+                    // console.log(document.getElementById("properties"));
                     let path = currentItem.getAttribute('href');
                     if (path[0] == '/'){
                         path = path.slice(1)
@@ -763,6 +911,19 @@
     <div id="drop-zone">
         <img src="endpoints/GET/upload.svg" alt="" style="pointer-events: none;">
         Upload file to current directory
+    </div>
+    <div id="ImageModal" class="modal" onclick="closeModal(event)">
+        <!-- <span id="warning" style="justify-content: center;">
+            Blue border indicates image is scaled down to fit screen.<br>
+            please use "Open in new tab" to view full resolution.
+        </span> -->
+        <span class="close" onclick="closeModal()">&times;</span>
+        <img class="modal-content" id="img01">
+        <div id="modalCaption"></div>
+        <div style="display: flex; flex-direction: row; gap: 20px;">
+            <button id="download" onclick="downloadModal()">Download</button>
+            <button id="openinnewtab" onclick="openInNewTabModal()">Open in new tab</button>
+        </div>
     </div>
     <!-- <img src="./upload-svgrepo-com.svg" alt=""> -->
     
