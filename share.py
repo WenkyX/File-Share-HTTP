@@ -153,8 +153,9 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 file_name = file_name1
             print(file_name1)
 
+            print(os.path.abspath(file_name), "vs", BASE_DIR)
+            print(file_name, "vs", BASE_DIR)
             if not (os.path.abspath(file_name)).startswith(BASE_DIR):
-                print(os.path.abspath(file_name), "vs", BASE_DIR)
                 self.send_error(403, "Forbidden: Access outside the base directory is not allowed.")
                 return
             # print(file_name)
@@ -399,8 +400,8 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
             for i, item in enumerate(items):
-                item = unquote(item).strip("/")
-                item_path = os.path.join(os.getcwd(), item)
+                item = unquote(item)
+                item_path = item
                 
                 base_dir = os.path.basename(item)  # Get just the final part (like "c")
 
@@ -508,7 +509,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                     <div class="spinner"></div>
                     <img src="alert.svg">
                 </div>
-                <a class="file" href="{href}" id="{display_name}" {"onclick=\"previewImage(event, this)\"" if icon_href == os.path.basename(name) else ''}>
+                <a class="file" href="{href}" id="{display_name}" {"onclick='previewImage(event, this)'" if icon_href == os.path.basename(name) else ''}>
                     <div class=icon>
                         <img src="{icon_href}">
                         <div class="fileName">
@@ -661,6 +662,26 @@ if __name__ == '__main__':
 
 
     try:
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-port", type=int, help="Port number")
+        parser.add_argument("-path", type=str, help="Path to directory")
+        parser.add_argument("-no-gui", action="store_true", help="Run without GUI")
+
+        args = parser.parse_args()
+
+        if args.no_gui:
+            PORT = args.port or 8700
+            DIRECTORY_TO_SERVE = args.path or "./"
+            BASE_DIR = os.path.abspath(DIRECTORY_TO_SERVE)
+            os.chdir(DIRECTORY_TO_SERVE)
+
+            print(f"Port: {PORT}")
+            print(f"Path: {DIRECTORY_TO_SERVE}")
+
+            is_authenticate = type('', (), {'get': lambda self: True})()
+            start_server()
+            sys.exit(0)
+
         root = tk.Tk()
         is_authenticate = tk.BooleanVar(value = True)
         root.title("File Share HTTP server")
@@ -692,6 +713,9 @@ if __name__ == '__main__':
         pathInput = tk.Entry(frame)
         pathInput.insert(tk.END, "../")
         pathInput.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        if args.path is not None:
+            pathInput.delete(0, tk.END)
+            pathInput.insert(tk.END, args.path)
         # pathInput.place(x = 30, y = 10)
 
         button = tk.Button(frame, text="Browse...", command=choose_folder)
@@ -704,6 +728,9 @@ if __name__ == '__main__':
         portInput = tk.Entry(frame2)
         portInput.insert(tk.END, "8701")
         portInput.pack(pady=10)
+        if args.port is not None:
+            portInput.delete(0, tk.END)
+            portInput.insert(tk.END, str(args.port))
 
         checkbox = tk.Checkbutton(tab1, text="Use Authentication", variable=is_authenticate)
         checkbox.pack()
@@ -756,11 +783,6 @@ if __name__ == '__main__':
 
     except Exception as e:
         print("Error Trying to use display:", e)
-        parser = argparse.ArgumentParser()
-        parser.add_argument("-port", type=int, help="Port number")
-        parser.add_argument("-path", type=str, help="Path to directory")
-
-        args = parser.parse_args()
 
         PORT = args.port or 8700
         DIRECTORY_TO_SERVE = args.path or "./"
