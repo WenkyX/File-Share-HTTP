@@ -340,6 +340,9 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 log_output(f"Upload progress from {client_ip} : {data['progress']}%", 2)
                 # print(data['progress'])
 
+            self.send_response(200)
+            self.end_headers()
+
         elif self.path == '/endpoints/POST/updateText':
             content_length = int(self.headers['Content-Length'])
             body = self.rfile.read(content_length)

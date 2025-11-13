@@ -295,6 +295,9 @@
         #uploadfilename {
             position: absolute;
             bottom: 125px;
+            background-color: rgb(50, 57, 68);
+            border-radius: 5px;
+            padding: 6px;
         }
         /* * {
             display:none;
@@ -369,6 +372,9 @@
             position: absolute;
             left: 20px;
             top: -30px;
+            background-color: rgb(50, 57, 68);
+            border-radius: 5px;
+            padding: 6px;
         }
 
         .header {
@@ -807,51 +813,54 @@
             clearInterval(updateTextBox);
         }
         
-        function uploadFile(file) {
+        function uploadFile(files) {
             const input = document.getElementById('fileInput');
-            if (!file) {
-                file = input.files[0];
+            if (!files) {
+                files = input.files;
             }
-            console.log(file);
 
-            const formData = new FormData();
-            formData.append('file', file);
+            if (!files.length) {
+                console.error('No files selected.');
+                return;
+            }
 
-            const xhr = new XMLHttpRequest();
+            for (const file of files) {
+                const formData = new FormData();
+                formData.append('file', file);
 
-            xhr.open('POST', '/endpoints/POST/upload', true);
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/endpoints/POST/upload', true);
 
-            xhr.upload.addEventListener('progress', (event) => {
-                if (event.lengthComputable) {
-                    const percentComplete = Math.round((event.loaded / event.total) * 100);
-                    console.log(`Upload Progress: ${percentComplete}%`);
-                    document.getElementById('uploadfilename').textContent = `Uploading: ${percentComplete}%`;
-                    fetch('/endpoints/POST/upload_progress', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({progress: percentComplete})
-                    });
-                }
-            });
+                xhr.upload.addEventListener('progress', (event) => {
+                    if (event.lengthComputable) {
+                        const percentComplete = Math.round((event.loaded / event.total) * 100);
+                        console.log(`Uploading ${file.name}: ${percentComplete}%`);
+                        document.getElementById('uploadfilename').textContent = `Uploading ${file.name}: ${percentComplete}%`;
+                        fetch('/endpoints/POST/upload_progress', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({file: file.name, progress: percentComplete})
+                        });
+                    }
+                });
 
-            xhr.addEventListener('load', () => {
-                if (xhr.status === 200) {
-                    console.log('Upload complete:', xhr.responseText);
-                    document.getElementById('uploadfilename').textContent = 'Upload complete!';
-                    location.reload(); // Optionally refresh the page
-                } else {
-                    console.error('Upload failed:', xhr.statusText);
-                    document.getElementById('uploadfilename').textContent = 'Upload failed!';
-                }
-            });
+                xhr.addEventListener('load', () => {
+                    if (xhr.status === 200) {
+                        console.log(`Upload complete: ${file.name}`);
+                        document.getElementById('uploadfilename').textContent = `${file.name} uploaded successfully!`;
+                    } else {
+                        console.error(`Upload failed for ${file.name}: ${xhr.statusText}`);
+                        document.getElementById('uploadfilename').textContent = `Upload failed for ${file.name}`;
+                    }
+                });
 
-            xhr.addEventListener('error', () => {
-                console.error('An error occurred during the upload.');
-                document.getElementById('uploadfilename').textContent = 'Upload error!';
-            });
+                xhr.addEventListener('error', () => {
+                    console.error(`Error uploading ${file.name}`);
+                    document.getElementById('uploadfilename').textContent = `Error uploading ${file.name}`;
+                });
 
-            // Send the form data
-            xhr.send(formData);
+                xhr.send(formData);
+            }
         }
 
         // // Dynamically load files and make them clickable for the context menu
@@ -939,7 +948,7 @@
         <div id="status">Status : Idle</div>
         <div class="upload">
             <span id="uploadfilename">Choose a file</span>
-            <input type="file" id="fileInput">
+            <input type="file" id="fileInput" multiple>
             <label for="fileInput" class="uploadlabel">
                 <img src="endpoints/GET/upload.svg" alt="">
             </label>
