@@ -19,6 +19,7 @@ from http.cookies import SimpleCookie
 # import ssl
 import re
 import mimetypes
+from PIL import Image
 
 # context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 # context.load_cert_chain(certfile='cert/cert.pem', keyfile='cert/key.pem')
@@ -128,6 +129,8 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         elif self.path == '/':
             curpath = os.path.join(BASE_DIR, self.path.lstrip('/'))
             return self.serve_directory_list()
+        # elif '/._thumbcache/' in self.path:
+        #     self.send_error(404, "File not found")
         elif os.path.isdir(self.path.lstrip('/').replace('%20', ' ')):  # Check if path is a directory
             curpath = os.path.join(BASE_DIR, self.path.lstrip('/'))
             return self.serve_directory(self.path + "/")  # Serve subdirectory
@@ -232,7 +235,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
             self.wfile.write(json.dumps(response).encode())
-        elif self.path== '/endpoints/GET/getText':
+        elif self.path == '/endpoints/GET/getText':
             # parsed = urlparse(self.path)
             # query = parse_qs(parsed.query)  # access params like query['key'][0]
             global textData
@@ -485,7 +488,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
 
         list_items = ""
         list_items += f"""
-            <li class="files">
+            <li class="files" data-type="navigation">
                 <a class="file" href=".." id="..">
                     <div class=icon>
                         <img src="endpoints/GET/folder.svg">
@@ -495,24 +498,36 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             </li>
             """
         for name in file_list:
-            display_name = os.path.basename(name) + "/" if os.path.isdir(name) else os.path.basename(name)
-            href = f"/{name}/" if os.path.isdir(name) else f"/{name}"
+            isdir = os.path.isdir(name)
+            basename = os.path.basename(name)
+            display_name = basename + "/" if isdir else basename
+            href = f"/{name}/" if isdir else f"/{name}"
             # icon_href = 
-            # icon_href = "endpoints/GET/folder.svg" if os.path.isdir(name) else "endpoints/GET/unknown.svg"
-            if os.path.isdir(name):
+            # icon_href = "endpoints/GET/folder.svg" if isdir else "endpoints/GET/unknown.svg"
+            if isdir:
                 icon_href = "endpoints/GET/folder.svg"
             # elif name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp', '.tiff', '.ico', '.heic', '.jfif', '.avif', '.apng', '.raw', '.pbm', '.pgm', '.ppm', '.xbm', '.xpm', '.cur', '.tga', '.dds', '.exr', '.j2k', '.jpf', '.jp2', '.jpx', '.jpm', '.mj2', '.sgi', '.ras', '.cmx')):
             elif name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp', '.bmp', '.ico', '.avif', '.apng')):
-                icon_href = os.path.basename(name)
+                # icon_href = basename
+                if not os.path.exists("._thumbcache"):
+                    os.makedirs("._thumbcache")
+                if not os.path.exists(f"._thumbcache/{basename}"):
+                    img = Image.open(name)
+                    img.thumbnail((200, 200))
+                    img.save(f"._thumbcache/{basename}")
+                icon_href = f"._thumbcache/{basename}"
+
             else:
                 icon_href = "endpoints/GET/unknown.svg"
+            
+            file_date = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(name)))
             list_items += f"""
-            <li class="files">
+            <li class="files" data-date="{file_date}" data-type="{'directory' if isdir else 'file'}">
                 <div class="buffering">
                     <div class="spinner"></div>
                     <img src="alert.svg">
                 </div>
-                <a class="file" href="{href}" id="{display_name}" {"onclick='previewImage(event, this)'" if icon_href == os.path.basename(name) else ''}>
+                <a class="file" href="{href}" id="{display_name}" {"onclick='previewImage(event, this)'" if icon_href == f"._thumbcache/{basename}" else ''}>
                     <div class=icon>
                         <img src="{icon_href}">
                         <div class="fileName">
