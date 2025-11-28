@@ -2,8 +2,13 @@
 <html>
 <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Login</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             justify-content: center;
             align-items: center;
@@ -11,83 +16,90 @@
             background-color: rgb(34, 35, 48);
             color: white;
             flex-direction: column;
-            height: 90vh;
-            overflow: hidden;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
             font-family: 'Courier New', Courier, monospace;
         }
+
         div {
             display: flex;
             flex-direction: column;
             gap: 5px;
             justify-content: center;
             align-items: center;
-            box-shadow: none;
             border: 1px solid rgb(100, 90, 90);
-            padding: 60px;
-            padding-top: 20px;
+            padding: 40px 30px 60px;
             border-radius: 20px;
             box-shadow: rgb(143, 133, 133) 0px 0px 10px;
-            backdrop-filter: blue(10px);
+            backdrop-filter: blur(10px);
+            width: 100%;
+            max-width: 400px;
         }
+
         input {
-            all:unset;
+            all: unset;
+            box-sizing: border-box;
         }
+
         input:-internal-autofill-selected {
             background-color: transparent !important;
         }
+
         input:-webkit-autofill {
             background-color: transparent !important;
             transition: background-color 5000s ease-in-out 0s;
         }
+
         .field {
             background-color: transparent;
             border: 1px solid rgb(119, 113, 113);
             border-radius: 30px;
             color: white;
-            width: 15vw;
-            height: 20px;
-            padding: 15px;
-        }
-        .field::placeholder {
-            color: white;
+            width: 100%;
+            min-width: 0;
+            padding: 15px 20px;
+            font-size: 16px;
         }
 
-        .button {
-            background-color: white;
-            border-radius: 30px;
-            width: 15vw;
-            height: 10px;
-            padding: 15px;
-            justify-content: center;
-            align-items: center;
-            display: flex;
-            color: black;
+        .field::placeholder {
+            color: white;
         }
 
         #status {
             padding-top: 10px;
             color: rgb(245, 89, 89);
+            text-align: center;
+            word-wrap: break-word;
         }
 
         .login {
-            all:unset;
+            all: unset;
+            box-sizing: border-box;
             background-color: white;
             color: black;
             justify-content: center;
             align-items: center;
             display: flex;
             border-radius: 30px;
-            width: 15vw;
-            height: 20px;
-            padding: 15px;
+            width: 100%;
+            padding: 15px 20px;
             font-weight: bold;
-            font-size: large;
+            font-size: 16px;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 1.5rem;
         }
     </style>
     <script>
-        function sendLogin(event){
+        function sendLogin(event) {
             document.getElementById('status').textContent = ''
-            
+
             const username = document.getElementById('username').value
             const password = document.getElementById('password').value
 
@@ -104,23 +116,23 @@
                     password: password
                 })
             })
-            .then(response => response.text().then(text => ({
-            status: response.status,
-            body: text
-            })))
-            .then(({ status, body }) => {
-            if (status === 200) {
-                console.log('Success:', body);
-                location.reload();
-            } else {
-                console.log('Error:', status, body);
-                document.getElementById('status').textContent = body
+                .then(response => response.text().then(text => ({
+                    status: response.status,
+                    body: text
+                })))
+                .then(({ status, body }) => {
+                    if (status === 200) {
+                        console.log('Success:', body);
+                        location.reload();
+                    } else {
+                        console.log('Error:', status, body);
+                        document.getElementById('status').textContent = body
 
-            }
-            });
+                    }
+                });
         }
-        document.addEventListener('DOMContentLoaded', function() {
-            document.addEventListener('keydown', function(event) {
+        document.addEventListener('DOMContentLoaded', function () {
+            document.addEventListener('keydown', function (event) {
                 if (event.key === 'Enter') {
                     sendLogin();
                 }
@@ -128,18 +140,15 @@
         })
     </script>
 </head>
+
 <body>
     <div>
         <h1>Login</h1>
-        <!-- <label for="username">Username</label> -->
         <input name="username" id="username" class="field" placeholder="Username"><br>
-
-        <!-- <label for="password">Password</label> -->
         <input name="password" id="password" type="password" class="field" placeholder="Password"><br>
-
         <button onclick="sendLogin()" class="login">Login</button>
         <span id="status"></span>
-        <!-- <input type="submit" value="Login"> -->
     </div>
 </body>
+
 </html>
