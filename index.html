@@ -435,7 +435,7 @@
             user-select: none;
             
         }
-        .modal img {
+        .modal img, .modal video {
             margin: auto;
             display: block;
             max-width: 90%;
@@ -515,32 +515,92 @@
             const modal = document.getElementById("ImageModal");
             const captionText = document.getElementById("modalCaption");
             const modalImg = document.getElementById("img01");
+            const href = el.href;
+            
+            // Check if it's a video
+            const videoExtensions = ['.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm', '.m4v', '.mpg', '.mpeg'];
+            const isVideo = videoExtensions.some(ext => href.toLowerCase().endsWith(ext));
+            
             modal.style.display = "flex";
             captionText.innerHTML = el.id;
-            modalImg.src = "";
-            modalImg.src = el.href;
-            let modalImgX = 0;
-            let modalImgY = 0;
-            const modalRect = modal.getBoundingClientRect();
-            const modalX = modalRect.width;
-            const modalY = modalRect.height;
-            modalImg.style.border = "red solid 5px"
-            modalImg.onload = function() {
-                modalImgX = modalImg.naturalWidth;
-                modalImgY = modalImg.naturalHeight;
-                if (modalImgX > modalX || modalImgY > modalY){
-                    modalImg.style.border = "5px solid #8abdf7"; //indicate that image is scaled down
-                }else{
-                    console.log("asdff");
-                    modalImg.style.border = "#2e3440 solid 5px"
+            
+            if (isVideo) {
+                // Hide image
+                modalImg.style.display = "none";
+                
+                // Get or create video element
+                let videoEl = document.getElementById("video01");
+                
+                if (!videoEl) {
+                    videoEl = document.createElement("video");
+                    videoEl.id = "video01";
+                    videoEl.controls = true;
+                    videoEl.className = "modal-content";
+                    videoEl.style.objectFit = "contain";
+                    videoEl.style.border = "#2e3440 solid 5px";
+                    // Insert after the img element
+                    modalImg.parentNode.insertBefore(videoEl, modalImg.nextSibling);
+                }
+
+                videoEl.onloadedmetadata = function() {
+                    const modalRect = modal.getBoundingClientRect();
+                    const modalX = modalRect.width;
+                    const modalY = modalRect.height;
+                    const videoX = videoEl.videoWidth;
+                    const videoY = videoEl.videoHeight;
+                    
+                    if (videoX > modalX || videoY > modalY) {
+                        videoEl.style.border = "5px solid #8abdf7"; // indicate that video is scaled down
+                    } else {
+                        videoEl.style.border = "#2e3440 solid 5px";
+                    }
+                }
+                
+                videoEl.style.display = "block";
+                videoEl.src = href;
+                videoEl.load();
+            } else {
+                // Hide video if it exists
+                const videoEl = document.getElementById("video01");
+                if (videoEl) {
+                    videoEl.style.display = "none";
+                    videoEl.pause();
+                    videoEl.src = "";
+                }
+                
+                // Show image
+                modalImg.style.display = "block";
+                modalImg.src = "";
+                modalImg.src = href;
+                
+                let modalImgX = 0;
+                let modalImgY = 0;
+                const modalRect = modal.getBoundingClientRect();
+                const modalX = modalRect.width;
+                const modalY = modalRect.height;
+                
+                modalImg.onload = function() {
+                    modalImgX = modalImg.naturalWidth;
+                    modalImgY = modalImg.naturalHeight;
+                    if (modalImgX > modalX || modalImgY > modalY) {
+                        modalImg.style.border = "5px solid #8abdf7"; // indicate that image is scaled down
+                    } else {
+                        modalImg.style.border = "#2e3440 solid 5px";
+                    }
                 }
             }
-
         }
 
         function closeModal(e) {
             if (e && e.target.id !== "ImageModal") return;
             const modal = document.getElementById("ImageModal");
+            const videoEl = document.getElementById("video01");
+            
+            // Pause video if it exists
+            if (videoEl) {
+                videoEl.pause();
+            }
+            
             modal.style.display = "none";
         }
 
@@ -556,7 +616,14 @@
 
         function openInNewTabModal() {
             const modalImg = document.getElementById("img01");
-            window.open(modalImg.src, '_blank');
+            const videoEl = document.getElementById("video01");
+            
+            // Check which element is currently visible
+            if (videoEl && videoEl.style.display !== "none") {
+                window.open(videoEl.src, '_blank');
+            } else {
+                window.open(modalImg.src, '_blank');
+            }
         }
 
         document.addEventListener("DOMContentLoaded", function() {
@@ -772,12 +839,7 @@
                 properties.style.display = 'block';
                 properties.classList.remove('pop-out');
                 const files = event.dataTransfer.files;
-                console.log('Dropped files:', files);                // Handle the dropped files here
-                // Example: log the names
-                for (let file of files) {
-                    console.log(file.name);
-                    uploadFile(file)
-                }
+                uploadFile(files); // Pass FileList directly
             });
             // window.addEventListener("drop", function(e) {
             //     dropZone.style.pointerEvents = 'none';
@@ -853,11 +915,7 @@
         
         function uploadFile(files) {
             const input = document.getElementById('fileInput');
-            if (!files) {
-                files = input.files;
-            }
-
-            if (!files.length) {
+            if (!files || !files.length) {
                 console.error('No files selected.');
                 return;
             }

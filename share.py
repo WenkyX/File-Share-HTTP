@@ -113,9 +113,24 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             return
         
         global curpath
-        if self.path.endswith('endpoints/GET/folder.svg') or self.path.endswith('endpoints/GET/unknown.svg') or self.path.endswith('endpoints/GET/upload.svg') or self.path.endswith('/alert.svg'):
+        static_files = ['/endpoints/GET/folder.svg', 
+                        '/endpoints/GET/unknown.svg', 
+                        '/endpoints/GET/upload.svg', 
+                        '/alert.svg', 
+                        '/endpoints/GET/video.svg',
+                        '/endpoints/GET/zip.svg',
+                        '/endpoints/GET/pdf.svg',
+                        '/endpoints/GET/word.svg',
+                        '/endpoints/GET/excel.svg',
+                        '/endpoints/GET/ppt.svg',
+                        '/endpoints/GET/audio.svg',
+                        '/endpoints/GET/text.svg',
+                        '/endpoints/GET/exe.svg',
+                        '/endpoints/GET/code.svg'
+                        ]
+        if any(self.path.endswith(file) for file in static_files):
             # Serve the SVG files from the directory where the Python script is located
-            file_path = os.path.join(os.path.dirname(__file__), os.path.basename(self.path))
+            file_path = os.path.join(os.path.dirname(__file__), 'static', os.path.basename(self.path))
             # print(file_path)
             if os.path.exists(file_path):
                 # Send SVG file
@@ -502,21 +517,71 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             basename = os.path.basename(name)
             display_name = basename + "/" if isdir else basename
             href = f"/{name}/" if isdir else f"/{name}"
-            # icon_href = 
-            # icon_href = "endpoints/GET/folder.svg" if isdir else "endpoints/GET/unknown.svg"
+            
             if isdir:
                 icon_href = "endpoints/GET/folder.svg"
-            # elif name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp', '.tiff', '.ico', '.heic', '.jfif', '.avif', '.apng', '.raw', '.pbm', '.pgm', '.ppm', '.xbm', '.xpm', '.cur', '.tga', '.dds', '.exr', '.j2k', '.jpf', '.jp2', '.jpx', '.jpm', '.mj2', '.sgi', '.ras', '.cmx')):
-            elif name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp', '.bmp', '.ico', '.avif', '.apng')):
-                # icon_href = basename
+            elif name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.ico', '.avif', '.apng')):
                 if not os.path.exists("._thumbcache"):
                     os.makedirs("._thumbcache")
-                if not os.path.exists(f"._thumbcache/{basename}"):
+                
+                # Preserve original extension
+                original_ext = os.path.splitext(basename)[1]
+                thumb_path = f"._thumbcache/{os.path.splitext(basename)[0]}{original_ext}"
+                
+                if not os.path.exists(thumb_path):
                     img = Image.open(name)
+                    if img.mode == 'CMYK':
+                        img = img.convert('RGB')
+                    elif img.mode == 'RGBA':
+                        rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+                        rgb_img.paste(img, mask=img.split()[3])
+                        img = rgb_img
                     img.thumbnail((200, 200))
-                    img.save(f"._thumbcache/{basename}")
-                icon_href = f"._thumbcache/{basename}"
-
+                    img.save(thumb_path)
+                icon_href = thumb_path
+            elif name.lower().endswith(('.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm', '.m4v', '.mpg', '.mpeg')):
+                if not os.path.exists("._thumbcache"):
+                    os.makedirs("._thumbcache")
+                
+                thumb_path = f"._thumbcache/{os.path.splitext(basename)[0]}.jpg"
+                
+                if not os.path.exists(thumb_path):
+                    try:
+                        from moviepy import VideoFileClip  # Changed import for moviepy 2.x
+                        clip = VideoFileClip(name)
+                        # Get frame at 1 second or 10% into video
+                        frame_time = min(1.0, clip.duration * 0.1)
+                        frame = clip.get_frame(frame_time)
+                        img = Image.fromarray(frame)
+                        img.thumbnail((200, 200))
+                        img.save(thumb_path)
+                        clip.close()
+                        icon_href = thumb_path
+                    except Exception as e:
+                        print(f"Error generating video thumbnail: {e}")
+                        icon_href = "endpoints/GET/video.svg"
+                else:
+                    icon_href = thumb_path
+            elif name.lower().endswith('.pdf'):
+                icon_href = "endpoints/GET/pdf.svg"
+            elif name.lower().endswith(('.doc', '.docx', '.odt', '.rtf')):
+                icon_href = "endpoints/GET/word.svg"
+            elif name.lower().endswith(('.xls', '.xlsx', '.ods', '.csv')):
+                icon_href = "endpoints/GET/excel.svg"
+            elif name.lower().endswith(('.ppt', '.pptx', '.odp')):
+                icon_href = "endpoints/GET/ppt.svg"
+            elif name.lower().endswith(('.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a')):
+                icon_href = "endpoints/GET/audio.svg"
+            elif name.lower().endswith(('.txt', '.md', '.log', '.ini', '.cfg', '.json', '.xml', '.yaml', '.yml', '.csv')):
+                icon_href = "endpoints/GET/text.svg"
+            elif name.lower().endswith(('.exe', '.msi', '.dmg', '.pkg', '.deb', '.rpm')):
+                icon_href = "endpoints/GET/exe.svg"
+            elif name.lower().endswith(('.html', '.htm', '.css', '.js')):
+                icon_href = "endpoints/GET/code.svg"
+            elif name.lower().endswith(('.svg',)):
+                icon_href = name
+            elif name.lower().endswith(('.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz')):
+                icon_href = "endpoints/GET/zip.svg"
             else:
                 icon_href = "endpoints/GET/unknown.svg"
             
@@ -527,7 +592,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                     <div class="spinner"></div>
                     <img src="alert.svg">
                 </div>
-                <a class="file" href="{href}" id="{display_name}" {"onclick='previewImage(event, this)'" if icon_href == f"._thumbcache/{basename}" else ''}>
+                <a class="file" href="{href}" id="{display_name}" {"onclick='previewImage(event, this)'" if not isdir and (icon_href.startswith("._thumbcache/") or name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp', '.ico', '.avif', '.apng'))) else ''}>
                     <div class=icon>
                         <img src="{icon_href}">
                         <div class="fileName">
