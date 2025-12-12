@@ -1049,7 +1049,7 @@
             <label for="fileInput" class="uploadlabel">
                 <img src="endpoints/GET/upload.svg" alt="">
             </label>
-            <button onclick="uploadFile()" class="uploadbutton">Upload</button>
+            <button onclick="uploadFile(document.getElementById('fileInput').files)" class="uploadbutton">Upload</button>
         </div>
     </div>
     <!-- <a href="/download"><button>Download All as ZIP</button></a> -->

@@ -517,10 +517,20 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             basename = os.path.basename(name)
             display_name = basename + "/" if isdir else basename
             href = f"/{name}/" if isdir else f"/{name}"
-            
+
+            kind = ''
             if isdir:
                 icon_href = "endpoints/GET/folder.svg"
-            elif name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.ico', '.avif', '.apng')):
+            else:
+                import magic
+                import mimetypes
+                kind = magic.from_file(name, mime=True)
+                ext = mimetypes.guess_extension(kind)
+
+            # if name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.ico', '.avif', '.apng')):
+            if not kind:
+                icon_href = "endpoints/GET/unknown.svg"
+            elif kind.startswith('image/') and not kind == 'image/svg+xml':
                 if not os.path.exists("._thumbcache"):
                     os.makedirs("._thumbcache")
                 
@@ -529,17 +539,24 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 thumb_path = f"._thumbcache/{os.path.splitext(basename)[0]}{original_ext}"
                 
                 if not os.path.exists(thumb_path):
-                    img = Image.open(name)
-                    if img.mode == 'CMYK':
-                        img = img.convert('RGB')
-                    elif img.mode == 'RGBA':
-                        rgb_img = Image.new('RGB', img.size, (255, 255, 255))
-                        rgb_img.paste(img, mask=img.split()[3])
-                        img = rgb_img
-                    img.thumbnail((200, 200))
-                    img.save(thumb_path)
-                icon_href = thumb_path
-            elif name.lower().endswith(('.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm', '.m4v', '.mpg', '.mpeg')):
+                    try:
+                        img = Image.open(name)
+                        if img.mode == 'CMYK':
+                            img = img.convert('RGB')
+                        elif img.mode == 'RGBA':
+                            rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+                            rgb_img.paste(img, mask=img.split()[3])
+                            img = rgb_img
+                        img.thumbnail((200, 200))
+                        img.save(thumb_path)
+                        icon_href = thumb_path
+                    except Exception as e:
+                        print(f"Error generating thumbnail for {name}: {e}")
+                        icon_href = "endpoints/GET/unknown.svg"
+                else:
+                    icon_href = thumb_path
+            # elif name.lower().endswith(('.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm', '.m4v', '.mpg', '.mpeg')):
+            elif kind.startswith('video/'):
                 if not os.path.exists("._thumbcache"):
                     os.makedirs("._thumbcache")
                 
@@ -562,25 +579,35 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                         icon_href = "endpoints/GET/video.svg"
                 else:
                     icon_href = thumb_path
-            elif name.lower().endswith('.pdf'):
+            # elif name.lower().endswith('.pdf'):
+            elif ext in ['.pdf'] or kind == 'application/pdf':
                 icon_href = "endpoints/GET/pdf.svg"
-            elif name.lower().endswith(('.doc', '.docx', '.odt', '.rtf')):
+            # elif name.lower().endswith(('.doc', '.docx', '.odt', '.rtf')):
+            elif ext in ['.doc', '.docx', '.odt', '.rtf'] :
                 icon_href = "endpoints/GET/word.svg"
-            elif name.lower().endswith(('.xls', '.xlsx', '.ods', '.csv')):
+            # elif name.lower().endswith(('.xls', '.xlsx', '.ods', '.csv')):
+            elif ext in ['.xls', '.xlsx', '.ods', '.csv']:
                 icon_href = "endpoints/GET/excel.svg"
-            elif name.lower().endswith(('.ppt', '.pptx', '.odp')):
+            # elif name.lower().endswith(('.ppt', '.pptx', '.odp')):
+            elif ext in ['.ppt', '.pptx', '.odp']:
                 icon_href = "endpoints/GET/ppt.svg"
-            elif name.lower().endswith(('.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a')):
+            # elif name.lower().endswith(('.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a')):
+            elif kind.startswith('audio/'):
                 icon_href = "endpoints/GET/audio.svg"
-            elif name.lower().endswith(('.txt', '.md', '.log', '.ini', '.cfg', '.json', '.xml', '.yaml', '.yml', '.csv')):
+            # elif name.lower().endswith(('.txt', '.md', '.log', '.ini', '.cfg', '.json', '.xml', '.yaml', '.yml', '.csv')):
+            elif ext in ['.txt', '.md', '.log', '.ini', '.cfg', '.json', '.xml', '.yaml', '.yml', '.csv'] or kind in ['text/plain', 'application/json', 'application/xml', 'text/x-yaml']:
                 icon_href = "endpoints/GET/text.svg"
-            elif name.lower().endswith(('.exe', '.msi', '.dmg', '.pkg', '.deb', '.rpm')):
+            # elif name.lower().endswith(('.exe', '.msi', '.dmg', '.pkg', '.deb', '.rpm')):
+            elif ext in ['.exe', '.msi', '.dmg', '.pkg', '.deb', '.rpm'] or kind in ['application/x-msdownload', 'application/x-mach-binary', 'application/x-debian-package']:
                 icon_href = "endpoints/GET/exe.svg"
-            elif name.lower().endswith(('.html', '.htm', '.css', '.js')):
+            # elif name.lower().endswith(('.html', '.htm', '.css', '.js')):
+            elif ext in ['.html', '.htm', '.css', '.js'] or kind in ['text/html', 'text/css', 'application/javascript']:
                 icon_href = "endpoints/GET/code.svg"
-            elif name.lower().endswith(('.svg',)):
+            # elif name.lower().endswith(('.svg',)):
+            elif ext in ['.svg'] or kind == 'image/svg+xml':
                 icon_href = name
-            elif name.lower().endswith(('.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz')):
+            # elif name.lower().endswith(('.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz')):
+            elif ext in ['.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz'] or kind in ['application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed', 'application/x-tar']:
                 icon_href = "endpoints/GET/zip.svg"
             else:
                 icon_href = "endpoints/GET/unknown.svg"
@@ -679,11 +706,11 @@ if __name__ == '__main__':
             if localIp == "Error":
                 log_output(f"No local network detected", color='red')
                 log_output(f"Serving {DIRECTORY_TO_SERVE} at 127.0.0.0 instead with Port {PORT}")
-                log_output(f"Open https://127.0.0.0:{PORT} in your browser", color='green')
+                log_output(f"Open http://127.0.0.0:{PORT} in your browser", color='green')
             else:
                 log_output(f"Local IP: {localIp}")
                 log_output(f"Serving {DIRECTORY_TO_SERVE} at port {PORT}")
-                log_output(f"Open https://{localIp}:{PORT} in your browser", color='green')
+                log_output(f"Open http://{localIp}:{PORT} in your browser", color='green')
                 # label.config(text=f"Server started on port {PORT}")
 
             # print('testttttttttt')
