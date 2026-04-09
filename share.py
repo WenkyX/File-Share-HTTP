@@ -776,7 +776,7 @@ if __name__ == '__main__':
         parser.add_argument("-port", type=int, help="Port number")
         parser.add_argument("-path", type=str, help="Path to directory")
         parser.add_argument("-no-gui", action="store_true", help="Run without GUI")
-
+        parser.add_argument("-no-auth", action="store_true", help="Run without authentication")
         args = parser.parse_args()
 
         if args.no_gui:
@@ -788,7 +788,7 @@ if __name__ == '__main__':
             print(f"Port: {PORT}")
             print(f"Path: {DIRECTORY_TO_SERVE}")
 
-            is_authenticate = type('', (), {'get': lambda self: True})()
+            is_authenticate = type('', (), {'get': lambda self: not args.no_auth})()
             start_server()
             sys.exit(0)
 
