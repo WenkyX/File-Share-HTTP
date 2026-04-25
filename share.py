@@ -9,8 +9,6 @@ from urllib.parse import parse_qs, urlparse, unquote
 import argparse
 import cgi
 import json
-import tkinter as tk
-from tkinter import filedialog, ttk
 import threading, uuid
 import time
 import sys
@@ -109,7 +107,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         if not session and is_authenticate.get():
             with open(HTML_LOGIN_TEMPLATE, "r", encoding="utf-8") as f:
                 html = f.read()
-            self.respond(200, html)
+            self.respond(401, html)
             return
         
         global curpath
@@ -791,6 +789,9 @@ if __name__ == '__main__':
             is_authenticate = type('', (), {'get': lambda self: not args.no_auth})()
             start_server()
             sys.exit(0)
+        else:
+            import tkinter as tk
+            from tkinter import filedialog, ttk
 
         root = tk.Tk()
         is_authenticate = tk.BooleanVar(value = True)
